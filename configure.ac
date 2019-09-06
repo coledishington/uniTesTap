@@ -14,6 +14,8 @@ AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_SED
 
+AC_CHECK_PROG([VALGRIND], [valgrind], [valgrind], [])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 LT_INIT
 

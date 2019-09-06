@@ -151,7 +151,7 @@ static int tap_evaluate(struct test *test, bool *bailed) {
     /* Test status is meaningless if the test bailed */
     *bailed = cmd && cmd->type == tap_cmd_type_bail;
     if (*bailed) {
-        tap_printf_line(cmd->str);
+        tap_print_line(cmd->str);
         free(cmd);
         return 0;
     }
@@ -235,6 +235,13 @@ void tap_cleanup(struct TAP *tap) {
 
     passed_handle = !!tap;
     tap = get_handle(tap);
+    if (!tap) {
+        return;
+    }
+
+    for (size_t i = 0; i < tap->n_tests; i++) {
+        free(tap->tests[i].description);
+    }
     free(tap);
 
     if (!passed_handle) {

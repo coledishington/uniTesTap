@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -9,7 +8,7 @@ int tap_cmd_strndup(enum tap_cmd_type ctype, const char *line, size_t n_copy,
                     struct tap_cmd **d_cmd) {
     struct tap_cmd *cmd;
 
-    cmd = malloc(sizeof(*cmd) + n_copy + 1);
+    cmd = calloc(1, sizeof(*cmd) + n_copy + 1);
     if (!cmd) {
         return errno;
     }

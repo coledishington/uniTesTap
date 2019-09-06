@@ -23,8 +23,8 @@ static enum tap_cmd_type line_to_cmd_type(const char *line) {
 }
 
 int tap_parse_cmd(const char *line, struct tap_cmd **d_cmd) {
+    struct tap_cmd *cmd = NULL;
     enum tap_cmd_type ctype;
-    struct tap_cmd *cmd;
     const char *newline;
     size_t cmd_len;
     int err;
