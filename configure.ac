@@ -5,8 +5,12 @@ AC_CONFIG_MACRO_DIR([build/autotools/m4])
 AC_CONFIG_MACRO_DIRS([build/autotools/m4])
 AC_CONFIG_HEADERS([include/config.h])
 
+# TAP driver
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
+
 # Check for compiler characteristics
 AM_PROG_AR
+AC_PROG_AWK
 AC_PROG_CC
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
