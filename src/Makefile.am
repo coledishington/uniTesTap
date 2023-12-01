@@ -1,4 +1,4 @@
-INCLUDE_PATH=@top_build_prefix@/include
+INCLUDE_PATH = @abs_top_srcdir@/include
 
 AM_CFLAGS = -Wall -Werror
 AM_CPPFLAGS = -I $(INCLUDE_PATH)
