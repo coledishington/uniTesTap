@@ -1,0 +1,6 @@
+# Autotools generated files
+aclocal.m4
+configure
+autom4te.cache/
+build/
+**/Makefile.in
