@@ -19,7 +19,9 @@ void tap_register(test_t test);
  * @fn tap_runall
  *
  * Run all tests registered in the global TAP tests list.
+ *
+ * @return 0 on success, errno-like value otherwise.
  */
-void tap_runall(void);
+int tap_runall(void);
 
 #endif /* __TAP_H__ */
