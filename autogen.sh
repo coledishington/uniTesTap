@@ -40,6 +40,7 @@ positional arguments:
 options:
   -h, --help                 show this help message and exit
   -v, --verbose              print steps of execution
+  --check                    run unit tests
 eof
 }
 
@@ -54,6 +55,10 @@ argparse() {
                 ;;
             -v | --verbose)
                 VERBOSE='yes'
+                shift
+                ;;
+            --check)
+                CHECK='yes'
                 shift
                 ;;
             -*)
@@ -103,6 +108,8 @@ build() (
     # All build steps must be successful
     set -e
 
+    mkdir -p "$BUILD_DIR"
+
     # Must be run from source directory
     cd "$PROJECT_ROOT"
     ABS_PROJECT_ROOT=$(pwd)
@@ -121,6 +128,11 @@ build() (
     cd "$BUILD_DIR"
     "$ABS_PROJECT_ROOT"/configure
     make ${VERBOSE+-d}
+)
+
+check() (
+    cd "$BUILD_DIR"
+    make check
 )
 
 if ! argparse "$@"; then
@@ -167,6 +179,8 @@ if [ "$VERBOSE" = 'yes' ]; then
     set -x
 fi
 
-mkdir "$BUILD_DIR"
-
 build
+
+if [ "$CHECK" = 'yes' ]; then
+    check
+fi
