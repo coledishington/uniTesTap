@@ -1,6 +1,29 @@
+# autogen.sh generated files
+.autogen_cache
+
+# Any log
+**/*.log
+
+# Any temporary files
+**/*~
+
 # Autotools generated files
 aclocal.m4
+config.status
 configure
+libtool
+include/config.h
+include/config.h.in
 autom4te.cache/
 build/
+**/Makefile
 **/Makefile.in
+**/stamp-h1
+
+
+# build generated files
+**/*.o
+**/*.la
+**/*.lo
+**/.deps/
+**/.libs/
