@@ -65,8 +65,11 @@ static int tap_evaluate(size_t test_id, test_t test) {
         _exit(-1);
     }
     if (cpid == -1) {
+        int err = errno;
         /* Child process spawning failed */
-        return errno;
+        printf("not ok %zu # internal test runner error %s(%d)\n", test_id,
+               strerror(err), err);
+        return err;
     }
 
     /* Wait for child to exit */
