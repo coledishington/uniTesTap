@@ -20,51 +20,64 @@ struct cfg cfg = {
     .n_tests = 0,
 };
 
-static int tap_evaluate(size_t test_id, test_t test) {
+static void tap_report_test(size_t test_id, int wres) {
     int res;
+
+    if (WIFEXITED(wres)) {
+        res = WEXITSTATUS(wres);
+        switch (res) {
+            case 0:
+                printf("ok %zu\n", test_id);
+                break;
+            default:
+                printf("not ok %zu\n", test_id);
+                break;
+        }
+    } else if (WIFSIGNALED(wres)) {
+        int sig = WTERMSIG(wres);
+        const char *sig_name = strsignal(sig);
+
+        if (!sig_name) {
+            sig_name = "UNKNOWN";
+        }
+        printf("not ok %zu # test terminated via %s(%d)\n", test_id, sig_name,
+               sig);
+    } else {
+        printf("no ok %zu # test exited for unknown reason\n", test_id);
+    }
+}
+
+static void tap_run_test_and_exit(test_t test) {
+    int res;
+
+    res = test();
+    _exit(res);
+}
+
+static int tap_evaluate(size_t test_id, test_t test) {
     int wres;
     pid_t cpid;
 
     cpid = fork();
     if (cpid == 0) {
-        /* Child process will run test */
-        res = test();
-        _exit(res);
-    } else if (cpid == -1) {
+        /* Child process will run test and exit */
+        tap_run_test_and_exit(test);
+        _exit(-1);
+    }
+    if (cpid == -1) {
         /* Child process spawning failed */
         return errno;
-    } else {
-        /* Wait for child to exit */
-        cpid = waitpid(cpid, &wres, 0);
-        if (cpid < 0) {
-            /* Child process is lost */
-            return errno;
-        }
-
-        /* Report test success */
-        if (WIFEXITED(wres)) {
-            res = WEXITSTATUS(wres);
-            switch (res) {
-                case 0:
-                    printf("ok %zu\n", test_id);
-                    break;
-                default:
-                    printf("not ok %zu\n", test_id);
-                    break;
-            }
-        } else if (WIFSIGNALED(wres)) {
-            int sig = WTERMSIG(wres);
-            const char *sig_name = strsignal(sig);
-
-            if (!sig_name) {
-                sig_name = "UNKNOWN";
-            }
-            printf("not ok %zu # test terminated via %s(%d)\n", test_id,
-                   sig_name, sig);
-        } else {
-            printf("no ok %zu # test exited for unknown reason\n", test_id);
-        }
     }
+
+    /* Wait for child to exit */
+    cpid = waitpid(cpid, &wres, 0);
+    if (cpid < 0) {
+        /* Child process is lost */
+        return errno;
+    }
+
+    /* Report test success */
+    tap_report_test(test_id, wres);
     return 0;
 }
 
