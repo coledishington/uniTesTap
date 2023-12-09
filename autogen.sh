@@ -6,6 +6,10 @@ M4_DIR="build/autotools/m4"
 PROJECT_ROOT=${0%autogen.sh}
 BUILD_DIR=build
 
+# autogen arguments
+VERBOSE=
+HELP=
+
 help() {
     cat <<eof
 usage: autogen.sh [-h|OPTION]... [builddir]
@@ -16,6 +20,7 @@ positional arguments:
 
 options:
   -h, --help                 show this help message and exit
+  -v, --verbose              print steps of execution
 eof
 }
 
@@ -26,6 +31,10 @@ argparse() {
         case "$1" in
             -h | --help)
                 HELP='yes'
+                shift
+                ;;
+            -v | --verbose)
+                VERBOSE='yes'
                 shift
                 ;;
             -*)
@@ -49,7 +58,7 @@ argparse() {
 
 build() (
     # All build steps must be successful
-    set -xe
+    set -e
 
     # Must be run from source directory
     cd "$PROJECT_ROOT"
@@ -65,10 +74,10 @@ build() (
         cp "$AUTOMAKE_LIBDIR/tap-driver.sh" "$AUX_DIR"
     fi
 
-    autoreconf -ivf
+    autoreconf -if ${VERBOSE+-v}
     cd "$BUILD_DIR"
     "$ABS_PROJECT_ROOT"/configure
-    make
+    make ${VERBOSE+-d}
 )
 
 if ! argparse "$@"; then
@@ -80,6 +89,10 @@ mkdir -p "$BUILD_DIR"
 if [ "$HELP" = 'yes' ]; then
     help
     exit 1
+fi
+
+if [ "$VERBOSE" = 'yes' ]; then
+    set -x
 fi
 
 build
