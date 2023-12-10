@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <tap.h>
 
@@ -28,11 +29,23 @@ int dereference_null_ptr(void) {
     return *priv == 0;
 }
 
+int ok_skipped(void) {
+    printf(":SKIP don't need this test");
+    return 0;
+}
+
+int not_ok_skipped(void) {
+    printf(":SKIP don't need this test");
+    return 1;
+}
+
 int main(void) {
     tap_register(return_zero, "This test does nothing but return zero");
     tap_register(assert_zero, NULL);
     tap_register(exhaust_stack_frame, NULL);
     tap_register(dereference_null_ptr, NULL);
+    tap_register(ok_skipped, NULL);
+    tap_register(not_ok_skipped, NULL);
 
     tap_runall();
 }
