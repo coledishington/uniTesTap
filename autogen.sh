@@ -4,11 +4,30 @@
 AUX_DIR="build/autotools/aux"
 M4_DIR="build/autotools/m4"
 PROJECT_ROOT=${0%autogen.sh}
-BUILD_DIR=build
+CACHE=.autogen_cache
 
 # autogen arguments
+BUILD_DIR=
 VERBOSE=
 HELP=
+
+# Cache arguments
+CACHED_BUILD_DIR=
+
+abs_path() (
+    IN_PATH=$1
+
+    if [ "${IN_PATH#/}" = "$IN_PATH" ]; then
+        IN_PATH="$PROJECT_ROOT/$IN_PATH"
+    fi
+
+    DIR=$(dirname "$IN_PATH")
+    BASE=$(basename "$IN_PATH")
+
+    # Resolve a path even if the end dir doesn't exist
+    cd "$DIR"
+    printf '%s/%s' "$(pwd)" "$BASE"
+)
 
 help() {
     cat <<eof
@@ -56,6 +75,30 @@ argparse() {
     [ $N_POSITIONAL_ARGS -le 1 ]
 }
 
+cacheparse() {
+    while read -r key value; do
+        # Ignore any empty values
+        if [ -z "$value" ]; then
+            continue
+        fi
+
+        case "$key" in
+            builddir)
+                CACHED_BUILD_DIR=$value
+                ;;
+            *)
+                printf 'Unknown key-pair in cache: (%s, %s)' "$key" "$value" >&2
+                ;;
+        esac
+    done <"$CACHE"
+}
+
+cachewrite() {
+    cat <<eof >"$CACHE"
+builddir $(abs_path "$BUILD_DIR")
+eof
+}
+
 build() (
     # All build steps must be successful
     set -e
@@ -84,7 +127,36 @@ if ! argparse "$@"; then
     exit 1
 fi
 
-mkdir -p "$BUILD_DIR"
+if [ -e "$CACHE" ]; then
+    cacheparse
+fi
+
+# Resolve BUILD_DIR to compare to CACHED_BUILD_DIR
+if [ -n "$BUILD_DIR" ]; then
+    BUILD_DIR=$(abs_path "$BUILD_DIR")
+fi
+
+# Check if the cached builddir is being overridden
+if [ -n "$CACHED_BUILD_DIR" ]; then
+    if [ -n "$BUILD_DIR" ] && [ "$BUILD_DIR" != "$CACHED_BUILD_DIR" ] && [ -e "$CACHED_BUILD_DIR" ]; then
+        printf 'builddir exists created at "%s".\n' "$CACHED_BUILD_DIR"
+        printf 'Create new builddir at "%s"?\n' "$BUILD_DIR"
+        read -r ANSWER
+        case "$ANSWER" in
+            [yY] | [yY][eE][sS]) ;;
+            *) exit 1 ;;
+        esac
+    fi
+    BUILD_DIR=$CACHED_BUILD_DIR
+fi
+
+# Default value if no cmdline or cached builddir
+if [ -z "$BUILD_DIR" ]; then
+    BUILD_DIR=build
+fi
+
+# Write variables that need to persist between runs
+cachewrite
 
 if [ "$HELP" = 'yes' ]; then
     help
@@ -94,5 +166,7 @@ fi
 if [ "$VERBOSE" = 'yes' ]; then
     set -x
 fi
+
+mkdir "$BUILD_DIR"
 
 build
