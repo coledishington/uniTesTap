@@ -82,12 +82,12 @@ static void tap_run_test_and_exit(struct test *test) {
 static int tap_evaluate(struct test *test) {
     int pipefd[2] = {-1, -1};
     char *directive;
-    int res, wres;
+    int wres, err;
     pid_t cpid;
 
-    res = pipe(pipefd);
-    if (res == -1) {
-        int err = errno;
+    /* Communicate fail condition on pipe */
+    err = tap_pipe_setup(pipefd);
+    if (err != 0) {
         tap_print_internal_error(err, test, "failed to create pipe");
         return err;
     }
