@@ -104,6 +104,20 @@ builddir $(abs_path "$BUILD_DIR")
 eof
 }
 
+get_autotools_var() {
+    printf '@%s@' "$1" | (cd "$BUILD_DIR" && ./config.status --file=-)
+}
+
+make_() {
+    CC=$(get_autotools_var "CC")
+    # Try to generate compiler_commands.json for editors
+    intercept-build \
+        --cdb "$BUILD_DIR/compile_commands.json" \
+        --use-cc "$CC" \
+        --append \
+        make ${VERBOSE+-d}
+}
+
 build() (
     # All build steps must be successful
     set -e
@@ -127,7 +141,7 @@ build() (
     autoreconf -if ${VERBOSE+-v}
     cd "$BUILD_DIR"
     "$ABS_PROJECT_ROOT"/configure
-    make ${VERBOSE+-d}
+    make_
 )
 
 check() (

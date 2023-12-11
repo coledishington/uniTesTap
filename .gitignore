@@ -25,5 +25,6 @@ build/
 **/*.o
 **/*.la
 **/*.lo
+**/compile_commands.json
 **/.deps/
 **/.libs/
