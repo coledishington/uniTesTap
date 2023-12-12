@@ -53,9 +53,16 @@ static int tap_evaluate(size_t test_id, test_t test) {
                     break;
             }
         } else if (WIFSIGNALED(wres)) {
-            if (WCOREDUMP(wres)) {
-                printf("not ok %zu # test crashed\n", test_id);
+            int sig = WTERMSIG(wres);
+            const char *sig_name = strsignal(sig);
+
+            if (!sig_name) {
+                sig_name = "UNKNOWN";
             }
+            printf("not ok %zu # test terminated via %s(%d)\n", test_id,
+                   sig_name, sig);
+        } else {
+            printf("no ok %zu # test exited for unknown reason\n", test_id);
         }
     }
     return 0;
