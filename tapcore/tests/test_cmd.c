@@ -23,9 +23,9 @@ static int fail_todo(void) {
 }
 
 int main(void) {
-    tap_register(pass_skipped, NULL);
-    tap_register(fail_skipped, NULL);
-    tap_register(pass_todo, NULL);
-    tap_register(fail_todo, NULL);
-    tap_runall();
+    tap_register(NULL, pass_skipped, NULL);
+    tap_register(NULL, fail_skipped, NULL);
+    tap_register(NULL, pass_todo, NULL);
+    tap_register(NULL, fail_todo, NULL);
+    tap_runall_and_cleanup(NULL);
 }

@@ -37,10 +37,10 @@ static int dereference_null_ptr(void) {
 }
 
 int main(void) {
-    tap_register(early_exit_success, NULL);
-    tap_register(early_exit_fail, NULL);
-    tap_register(assert_zero, NULL);
-    tap_register(exhaust_stack_frame, NULL);
-    tap_register(dereference_null_ptr, NULL);
-    tap_runall();
+    tap_register(NULL, early_exit_success, NULL);
+    tap_register(NULL, early_exit_fail, NULL);
+    tap_register(NULL, assert_zero, NULL);
+    tap_register(NULL, exhaust_stack_frame, NULL);
+    tap_register(NULL, dereference_null_ptr, NULL);
+    tap_runall_and_cleanup(NULL);
 }

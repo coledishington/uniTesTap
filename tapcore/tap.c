@@ -15,14 +15,15 @@
 
 #define MAX_TESTS 200
 
-struct cfg {
+struct TAP {
     size_t n_tests;
     struct test tests[MAX_TESTS];
 };
 
-struct cfg cfg = {
-    .n_tests = 0,
-};
+/* Static variable used if no state is passed by caller */
+static struct TAP *handle = NULL;
+
+static inline TAP *get_handle(struct TAP *tap) { return tap ? tap : handle; }
 
 static void tap_report_test(struct test *test, int wres,
                             const char *directive) {
@@ -178,10 +179,35 @@ static int tap_evaluate(struct test *test) {
     return 0;
 }
 
-int tap_register(test_t funct, const char *in_description) {
+int tap_init(struct TAP **d_tap) {
+    struct TAP *tap;
+
+    if (d_tap) {
+        d_tap = &handle;
+    }
+    tap = calloc(1, sizeof(*tap));
+    if (!tap) {
+        return errno;
+    }
+    *d_tap = tap;
+    return 0;
+}
+
+int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
     char *description = NULL;
 
-    assert(cfg.n_tests + 1 < MAX_TESTS);
+    tap = get_handle(tap);
+    if (!tap) {
+        int err;
+
+        err = tap_init(&handle);
+        if (err != 0) {
+            return err;
+        }
+        tap = handle;
+    }
+
+    assert(tap->n_tests + 1 < MAX_TESTS);
 
     if (in_description) {
         description = strdup(in_description);
@@ -190,24 +216,24 @@ int tap_register(test_t funct, const char *in_description) {
         }
     }
 
-    cfg.tests[cfg.n_tests] = (struct test){
-        .id = cfg.n_tests + 1,
+    tap->tests[tap->n_tests] = (struct test){
+        .id = tap->n_tests + 1,
         .funct = funct,
         .description = description,
     };
-    cfg.n_tests++;
+    tap->n_tests++;
     return 0;
 }
 
-int tap_runall(void) {
-    int err = 0;
+int tap_runall(struct TAP *tap) {
+    int err;
 
-    printf("1..%zu\n", cfg.n_tests);
-    for (size_t idx = 0; idx < cfg.n_tests; idx++) {
+    tap = get_handle(tap);
+    printf("1..%zu\n", tap->n_tests);
+    for (size_t idx = 0; idx < tap->n_tests; idx++) {
         struct test *test;
-        int err;
 
-        test = &cfg.tests[idx];
+        test = &tap->tests[idx];
         err = tap_evaluate(test);
         if (err != 0) {
             printf("Bail out! internal test runner error %s(%d): ",
@@ -216,4 +242,16 @@ int tap_runall(void) {
         }
     }
     return err;
+}
+
+void tap_cleanup(struct TAP *tap) {
+    bool passed_handle;
+
+    passed_handle = !!tap;
+    tap = get_handle(tap);
+    free(tap);
+
+    if (!passed_handle) {
+        handle = NULL;
+    }
 }
