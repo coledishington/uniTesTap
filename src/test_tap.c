@@ -29,10 +29,10 @@ int dereference_null_ptr(void) {
 }
 
 int main(void) {
-    tap_register(return_zero);
-    tap_register(assert_zero);
-    tap_register(exhaust_stack_frame);
-    tap_register(dereference_null_ptr);
+    tap_register(return_zero, "This test does nothing but return zero");
+    tap_register(assert_zero, NULL);
+    tap_register(exhaust_stack_frame, NULL);
+    tap_register(dereference_null_ptr, NULL);
 
     tap_runall();
 }

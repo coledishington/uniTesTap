@@ -12,8 +12,10 @@ typedef int (*test_t)(void);
  * @fn tap_register
  *
  * Register a test to run in tap_runall().
+ *
+ * @return 0 on success, errno-like value otherwise.
  */
-void tap_register(test_t test);
+int tap_register(test_t test, const char *description);
 
 /**
  * @fn tap_runall
