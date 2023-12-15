@@ -25,24 +25,24 @@ struct cfg cfg = {
 
 static void tap_report_test(struct test *test, int wres,
                             const char *directive) {
-    int res;
+    bool passed = false;
 
     if (WIFEXITED(wres)) {
-        res = WEXITSTATUS(wres);
-        tap_print_testpoint(res == 0, test, directive);
+        passed = WEXITSTATUS(wres) == 0;
     } else if (WIFSIGNALED(wres)) {
-        int sig = WTERMSIG(wres);
-        const char *sig_name = strsignal(sig);
+        const char *sig_name;
+        int sig;
 
+        sig = WTERMSIG(wres);
+        sig_name = strsignal(sig);
         if (!sig_name) {
             sig_name = "UNKNOWN";
         }
         printf("# test terminated via %s(%d)\n", sig_name, sig);
-        tap_print_testpoint(false, test, directive);
     } else {
-        printf("# test exited for unknown reason\n");
-        tap_print_testpoint(false, test, directive);
+        printf("# test %zu exited for unknown reason\n", test->id);
     }
+    tap_print_testpoint(passed, test, directive);
 }
 
 static char *tap_process_test_output(int test_fd) {
