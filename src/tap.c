@@ -14,12 +14,6 @@
 
 #define MAX_TESTS 10
 
-struct test {
-    char *description;
-    test_t funct;
-    size_t id;
-};
-
 struct cfg {
     size_t n_tests;
     struct test tests[MAX_TESTS];
@@ -28,27 +22,6 @@ struct cfg {
 struct cfg cfg = {
     .n_tests = 0,
 };
-
-static void tap_print_testpoint(bool success, struct test *test,
-                                const char *directive) {
-    tap_string_t *tstr;
-    char *str;
-
-    tstr = tap_string_ctor(NULL);
-    tap_string_concat_printf(tstr, "%s %zu", success ? "ok" : "not ok",
-                             test->id);
-    if (test->description) {
-        tap_string_concat(tstr, " - ");
-        tap_string_concat(tstr, test->description);
-    }
-    if (directive) {
-        tap_string_concat(tstr, " # ");
-        tap_string_concat(tstr, directive);
-    }
-    str = tap_string_dtor(tstr, false);
-    printf("%s\n", str);
-    free(str);
-}
 
 static void tap_report_test(struct test *test, int wres,
                             const char *directive) {
@@ -115,7 +88,7 @@ static int tap_evaluate(struct test *test) {
     res = pipe(pipefd);
     if (res == -1) {
         int err = errno;
-        printf("# failed to create pipe %s(%d)\n", strerror(err), err);
+        tap_print_internal_error(err, test, "failed to create pipe");
         return err;
     }
 
@@ -137,8 +110,7 @@ static int tap_evaluate(struct test *test) {
         err = errno;
         close(pipefd[0]);
         close(pipefd[1]);
-        printf("# internal test runner error %s(%d)\n", strerror(err), err);
-        tap_print_testpoint(false, test, NULL);
+        tap_print_internal_error(err, test, "failed to fork process");
         return err;
     }
     close(pipefd[1]);
