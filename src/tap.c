@@ -14,32 +14,32 @@
 
 #define MAX_TESTS 10
 
-struct test_cfg {
+struct test {
     char *description;
-    test_t test;
+    test_t funct;
+    size_t id;
 };
 
 struct cfg {
     size_t n_tests;
-    struct test_cfg tests[MAX_TESTS];
+    struct test tests[MAX_TESTS];
 };
 
 struct cfg cfg = {
     .n_tests = 0,
 };
 
-static void tap_print_testpoint(bool success, size_t test_id,
-                                const char *description,
+static void tap_print_testpoint(bool success, struct test *test,
                                 const char *directive) {
     tap_string_t *tstr;
     char *str;
 
     tstr = tap_string_ctor(NULL);
     tap_string_concat_printf(tstr, "%s %zu", success ? "ok" : "not ok",
-                             test_id);
-    if (description) {
+                             test->id);
+    if (test->description) {
         tap_string_concat(tstr, " - ");
-        tap_string_concat(tstr, description);
+        tap_string_concat(tstr, test->description);
     }
     if (directive) {
         tap_string_concat(tstr, " # ");
@@ -50,14 +50,13 @@ static void tap_print_testpoint(bool success, size_t test_id,
     free(str);
 }
 
-static void tap_report_test(size_t test_id, struct test_cfg *test_cfg, int wres,
+static void tap_report_test(struct test *test, int wres,
                             const char *directive) {
     int res;
 
     if (WIFEXITED(wres)) {
         res = WEXITSTATUS(wres);
-        tap_print_testpoint(res == 0, test_id, test_cfg->description,
-                            directive);
+        tap_print_testpoint(res == 0, test, directive);
     } else if (WIFSIGNALED(wres)) {
         int sig = WTERMSIG(wres);
         const char *sig_name = strsignal(sig);
@@ -66,10 +65,10 @@ static void tap_report_test(size_t test_id, struct test_cfg *test_cfg, int wres,
             sig_name = "UNKNOWN";
         }
         printf("# test terminated via %s(%d)\n", sig_name, sig);
-        tap_print_testpoint(false, test_id, test_cfg->description, directive);
+        tap_print_testpoint(false, test, directive);
     } else {
         printf("# test exited for unknown reason\n");
-        tap_print_testpoint(false, test_id, test_cfg->description, directive);
+        tap_print_testpoint(false, test, directive);
     }
 }
 
@@ -99,15 +98,15 @@ static char *tap_process_test_output(int test_fd) {
     return NULL;
 }
 
-static void tap_run_test_and_exit(struct test_cfg *test_cfg) {
+static void tap_run_test_and_exit(struct test *test) {
     int res;
 
-    res = test_cfg->test();
+    res = test->funct();
     fflush(NULL);
     _exit(res);
 }
 
-static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
+static int tap_evaluate(struct test *test) {
     int pipefd[2] = {-1, -1};
     char *directive;
     int res, wres;
@@ -129,16 +128,17 @@ static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
         dup2(pipefd[1], STDERR_FILENO);
         close(pipefd[1]);
         /* Child process will run test and exit */
-        tap_run_test_and_exit(test_cfg);
+        tap_run_test_and_exit(test);
         _exit(-1);
     }
     if (cpid == -1) {
-        int err = errno;
-        /* Child process spawning failed */
-        printf("# internal test runner error %s(%d)\n", strerror(err), err);
-        tap_print_testpoint(false, test_id, NULL, NULL);
+        int err;
+
+        err = errno;
         close(pipefd[0]);
         close(pipefd[1]);
+        printf("# internal test runner error %s(%d)\n", strerror(err), err);
+        tap_print_testpoint(false, test, NULL);
         return err;
     }
     close(pipefd[1]);
@@ -154,11 +154,12 @@ static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
     }
 
     /* Report test success */
-    tap_report_test(test_id, test_cfg, wres, directive);
+    tap_report_test(test, wres, directive);
+    free(directive);
     return 0;
 }
 
-int tap_register(test_t test, const char *in_description) {
+int tap_register(test_t funct, const char *in_description) {
     char *description = NULL;
 
     assert(cfg.n_tests + 1 < MAX_TESTS);
@@ -170,8 +171,9 @@ int tap_register(test_t test, const char *in_description) {
         }
     }
 
-    cfg.tests[cfg.n_tests] = (struct test_cfg){
-        .test = test,
+    cfg.tests[cfg.n_tests] = (struct test){
+        .id = cfg.n_tests + 1,
+        .funct = funct,
         .description = description,
     };
     cfg.n_tests++;
@@ -182,10 +184,12 @@ int tap_runall(void) {
     int err = 0;
 
     printf("1..%zu\n", cfg.n_tests);
-    for (size_t test_idx = 0; test_idx < cfg.n_tests; test_idx++) {
-        struct test_cfg *test_cfg = &cfg.tests[test_idx];
-        size_t test_id = test_idx + 1;
-        err = tap_evaluate(test_id, test_cfg);
+    for (size_t idx = 0; idx < cfg.n_tests; idx++) {
+        struct test *test;
+        int err;
+
+        test = &cfg.tests[idx];
+        err = tap_evaluate(test);
         if (err != 0) {
             printf("Bail out! internal test runner error %s(%d): ",
                    strerror(err), err);
