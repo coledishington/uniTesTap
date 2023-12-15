@@ -27,18 +27,21 @@ struct cfg cfg = {
 };
 
 static void tap_print_testpoint(bool success, size_t test_id,
-                                const char *description) {
-    printf("%s %zu%s%s\n", success ? "ok" : "not ok", test_id,
-           description ? " - " : "", description ? description : "");
+                                const char *description,
+                                const char *directive) {
+    printf("%s %zu%s%s%s%s\n", success ? "ok" : "not ok", test_id,
+           description ? " - " : "", description ? description : "",
+           directive ? " - " : "", directive ? directive : "");
 }
 
-static void tap_report_test(size_t test_id, struct test_cfg *test_cfg,
-                            int wres) {
+static void tap_report_test(size_t test_id, struct test_cfg *test_cfg, int wres,
+                            const char *directive) {
     int res;
 
     if (WIFEXITED(wres)) {
         res = WEXITSTATUS(wres);
-        tap_print_testpoint(res == 0, test_id, test_cfg->description);
+        tap_print_testpoint(res == 0, test_id, test_cfg->description,
+                            directive);
     } else if (WIFSIGNALED(wres)) {
         int sig = WTERMSIG(wres);
         const char *sig_name = strsignal(sig);
@@ -47,14 +50,14 @@ static void tap_report_test(size_t test_id, struct test_cfg *test_cfg,
             sig_name = "UNKNOWN";
         }
         printf("# test terminated via %s(%d)\n", sig_name, sig);
-        tap_print_testpoint(false, test_id, test_cfg->description);
+        tap_print_testpoint(false, test_id, test_cfg->description, directive);
     } else {
         printf("# test exited for unknown reason\n");
-        tap_print_testpoint(false, test_id, test_cfg->description);
+        tap_print_testpoint(false, test_id, test_cfg->description, directive);
     }
 }
 
-static void tap_process_test_output(int test_fd) {
+static char *tap_process_test_output(int test_fd) {
     size_t line_len = 0;
     char *line = NULL;
     ssize_t bytes;
@@ -65,10 +68,19 @@ static void tap_process_test_output(int test_fd) {
         if (bytes == 0 || *line == '\n') {
             continue;
         }
-        /* Print test output as TAP comment */
+        if (strncasecmp(":skip", line, sizeof(":skip") - 1) == 0) {
+            if (line[bytes - 1] == '\n') {
+                line[bytes - 1] = '\0';
+            }
+            memmove(line, line + 1, bytes);
+            return line;
+        }
+
+        /* Print remaining test output as TAP comment */
         printf("# %s", line);
     }
     free(line);
+    return NULL;
 }
 
 static void tap_run_test_and_exit(struct test_cfg *test_cfg) {
@@ -81,6 +93,7 @@ static void tap_run_test_and_exit(struct test_cfg *test_cfg) {
 
 static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
     int pipefd[2] = {-1, -1};
+    char *directive;
     int res, wres;
     pid_t cpid;
 
@@ -107,14 +120,14 @@ static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
         int err = errno;
         /* Child process spawning failed */
         printf("# internal test runner error %s(%d)\n", strerror(err), err);
-        tap_print_testpoint(false, test_id, NULL);
+        tap_print_testpoint(false, test_id, NULL, NULL);
         close(pipefd[0]);
         close(pipefd[1]);
         return err;
     }
     close(pipefd[1]);
 
-    tap_process_test_output(pipefd[0]);
+    directive = tap_process_test_output(pipefd[0]);
     close(pipefd[0]);
 
     /* Wait for child to exit */
@@ -125,7 +138,7 @@ static int tap_evaluate(size_t test_id, struct test_cfg *test_cfg) {
     }
 
     /* Report test success */
-    tap_report_test(test_id, test_cfg, wres);
+    tap_report_test(test_id, test_cfg, wres, directive);
     return 0;
 }
 
