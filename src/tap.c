@@ -10,6 +10,8 @@
 #include <tap.h>
 #include <unistd.h>
 
+#include "internal.h"
+
 #define MAX_TESTS 10
 
 struct test_cfg {
@@ -29,9 +31,23 @@ struct cfg cfg = {
 static void tap_print_testpoint(bool success, size_t test_id,
                                 const char *description,
                                 const char *directive) {
-    printf("%s %zu%s%s%s%s\n", success ? "ok" : "not ok", test_id,
-           description ? " - " : "", description ? description : "",
-           directive ? " - " : "", directive ? directive : "");
+    tap_string_t *tstr;
+    char *str;
+
+    tstr = tap_string_ctor(NULL);
+    tap_string_concat_printf(tstr, "%s %zu", success ? "ok" : "not ok",
+                             test_id);
+    if (description) {
+        tap_string_concat(tstr, " - ");
+        tap_string_concat(tstr, description);
+    }
+    if (directive) {
+        tap_string_concat(tstr, " # ");
+        tap_string_concat(tstr, directive);
+    }
+    str = tap_string_dtor(tstr, false);
+    printf("%s\n", str);
+    free(str);
 }
 
 static void tap_report_test(size_t test_id, struct test_cfg *test_cfg, int wres,
