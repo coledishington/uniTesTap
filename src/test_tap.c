@@ -39,6 +39,16 @@ int not_ok_skipped(void) {
     return 1;
 }
 
+int ok_todo(void) {
+    printf(":TODO will this ever be done?");
+    return 0;
+}
+
+int not_ok_todo(void) {
+    printf(":TODO will this ever be done?");
+    return 1;
+}
+
 int main(void) {
     tap_register(return_zero, "This test does nothing but return zero");
     tap_register(assert_zero, NULL);
@@ -46,6 +56,8 @@ int main(void) {
     tap_register(dereference_null_ptr, NULL);
     tap_register(ok_skipped, NULL);
     tap_register(not_ok_skipped, NULL);
+    tap_register(ok_todo, NULL);
+    tap_register(not_ok_todo, NULL);
 
     tap_runall();
 }
