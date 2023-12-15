@@ -96,10 +96,10 @@ static int tap_evaluate(struct test *test) {
     fflush(NULL);
     cpid = fork();
     if (cpid == 0) {
-        close(pipefd[0]); /* Close read side */
-        dup2(pipefd[1], STDOUT_FILENO);
-        dup2(pipefd[1], STDERR_FILENO);
-        close(pipefd[1]);
+        close(pipefd[TAP_PIPE_RX]);
+        dup2(pipefd[TAP_PIPE_TX], STDOUT_FILENO);
+        dup2(pipefd[TAP_PIPE_TX], STDERR_FILENO);
+        close(pipefd[TAP_PIPE_TX]);
         /* Child process will run test and exit */
         tap_run_test_and_exit(test);
         _exit(-1);
@@ -108,15 +108,15 @@ static int tap_evaluate(struct test *test) {
         int err;
 
         err = errno;
-        close(pipefd[0]);
-        close(pipefd[1]);
-        tap_print_internal_error(err, test, "failed to fork process");
+        close(pipefd[TAP_PIPE_RX]);
+        close(pipefd[TAP_PIPE_TX]);
+        tap_print_internal_error(errno, test, "failed to fork process");
         return err;
     }
-    close(pipefd[1]);
+    close(pipefd[TAP_PIPE_TX]);
 
-    directive = tap_process_test_output(pipefd[0]);
-    close(pipefd[0]);
+    directive = tap_process_test_output(pipefd[TAP_PIPE_RX]);
+    close(pipefd[TAP_PIPE_RX]);
 
     /* Wait for child to exit */
     cpid = waitpid(cpid, &wres, 0);

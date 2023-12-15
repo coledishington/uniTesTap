@@ -18,6 +18,9 @@
         int STATIC_ASSERT_ID : STATIC_ASSERT_TEST(expr); \
     } STATIC_ASSERT_ID[STATIC_ASSERT_TEST(expr)]
 
+#define TAP_PIPE_RX 0
+#define TAP_PIPE_TX 1
+
 struct test {
     char *description;
     test_t funct;
