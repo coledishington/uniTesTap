@@ -3,6 +3,9 @@
 # Avoid errors by disallowing expansions of unset variables
 set -u
 
+# Constants
+YES='yes'
+
 # Autoconf aux and m4 will always go in <project-root>/build
 AUX_DIR="build/autotools/aux"
 M4_DIR="build/autotools/m4"
@@ -54,15 +57,15 @@ argparse() {
     while [ $# -gt 0 ]; do
         case "$1" in
             -h | --help)
-                HELP='yes'
                 shift
+                HELP=$YES
                 ;;
             -v | --verbose)
-                VERBOSE='yes'
+                VERBOSE=$YES
                 shift
                 ;;
             --check)
-                CHECK='yes'
+                CHECK=$YES
                 shift
                 ;;
             -*)
@@ -195,17 +198,17 @@ fi
 # Write variables that need to persist between runs
 cachewrite
 
-if [ "$HELP" = 'yes' ]; then
+if [ "$HELP" = "$YES" ]; then
     help
     exit 1
 fi
 
-if [ "$VERBOSE" = 'yes' ]; then
+if [ "$VERBOSE" = "$YES" ]; then
     set -x
 fi
 
 build
 
-if [ "$CHECK" = 'yes' ]; then
+if [ "$CHECK" = "$YES" ]; then
     check
 fi
