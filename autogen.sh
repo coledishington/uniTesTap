@@ -16,6 +16,7 @@ CACHE=.autogen_cache
 BUILD_DIR=
 VERBOSE=
 CHECK=
+CLEAN=
 HELP=
 
 # Cache arguments
@@ -48,6 +49,7 @@ options:
   -h, --help                 show this help message and exit
   -v, --verbose              print steps of execution
   --check                    run unit tests
+  --clean                    re-build everything
 eof
 }
 
@@ -64,6 +66,9 @@ argparse() {
                 ;;
             --check)
                 CHECK=$YES
+                ;;
+            --clean)
+                CLEAN=$YES
                 ;;
             -*)
                 printf 'Unknown option %s\n' "$1" >&2
@@ -151,8 +156,14 @@ build() (
         cp "$AUTOMAKE_LIBDIR/tap-driver.sh" "$AUX_DIR"
     fi
 
-    autoreconf -if ${VERBOSE+-v}
+    autoreconf -i ${CLEAN+-f} ${VERBOSE+-v}
     cd "$BUILD_DIR"
+
+    # Tidy up files created by make and configure
+    if [ "$CLEAN" = "$YES" ]; then
+        make distclean || true # Makefile may not exist
+    fi
+
     "$ABS_PROJECT_ROOT"/configure
     make_
 )
