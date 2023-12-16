@@ -45,7 +45,38 @@ static void tap_report_test(struct test *test, int wres,
     tap_print_testpoint(passed, test, directive);
 }
 
-static char *tap_process_test_output(int test_fd) {
+static int tap_parse_directive(const char *line, char **d_directive) {
+    const char *newline;
+    char *directive;
+    size_t cmd_len;
+
+    if (strncasecmp(":" TAP_DIRECTIVE_SKIP, line, sizeof(TAP_DIRECTIVE_SKIP)) !=
+            0 &&
+        strncasecmp(":" TAP_DIRECTIVE_TODO, line, sizeof(TAP_DIRECTIVE_TODO)) !=
+            0) {
+        return 0;
+    }
+
+    /* Copy everything before the first newline */
+    newline = strchr(line, '\n');
+    if (newline) {
+        cmd_len = newline - line;
+    } else {
+        cmd_len = strlen(line);
+    }
+
+    /* Skip past the ':' */
+    directive = strndup(line + 1, cmd_len - 1);
+    if (!directive) {
+        return errno;
+    }
+
+    *d_directive = directive;
+    return 0;
+}
+
+static int tap_process_test_output(int test_fd, char **d_directive) {
+    char *directive = NULL;
     size_t line_len = 0;
     char *line = NULL;
     ssize_t bytes;
@@ -53,25 +84,35 @@ static char *tap_process_test_output(int test_fd) {
 
     test_fp = fdopen(test_fd, "r");
     for (; (bytes = getline(&line, &line_len, test_fp)) != -1;) {
+        char *ln_directive = NULL;
+        int err;
+
         if (bytes == 0 || *line == '\n') {
             continue;
         }
-        if (strncasecmp(":" TAP_DIRECTIVE_SKIP, line,
-                        sizeof(TAP_DIRECTIVE_SKIP)) == 0 ||
-            strncasecmp(":" TAP_DIRECTIVE_TODO, line,
-                        sizeof(TAP_DIRECTIVE_TODO)) == 0) {
-            if (line[bytes - 1] == '\n') {
-                line[bytes - 1] = '\0';
-            }
-            memmove(line, line + 1, bytes);
-            return line;
+        err = tap_parse_directive(line, &ln_directive);
+        if (err != 0) {
+            break;
         }
-
-        /* Print remaining test output as TAP comment */
-        printf("# %s", line);
+        if (!ln_directive) {
+            /* Debug from the test, output as TAP comment */
+            printf("# %s\n", line);
+            continue;
+        }
+        if (directive) {
+            /* Only allow one directive command per test, warn the extra is
+             * ignored */
+            printf("# One directive command per test: ignoring '%s'\n",
+                   ln_directive);
+            free(ln_directive);
+        }
+        directive = ln_directive;
+    }
+    if (directive) {
+        *d_directive = directive;
     }
     free(line);
-    return NULL;
+    return 0;
 }
 
 static void tap_run_test_and_exit(struct test *test) {
@@ -84,7 +125,7 @@ static void tap_run_test_and_exit(struct test *test) {
 
 static int tap_evaluate(struct test *test) {
     int pipefd[2] = {-1, -1};
-    char *directive;
+    char *directive = NULL;
     int wres, err;
     pid_t cpid;
 
@@ -108,17 +149,19 @@ static int tap_evaluate(struct test *test) {
         _exit(-1);
     }
     if (cpid == -1) {
-        int err;
-
         err = errno;
         close(pipefd[TAP_PIPE_RX]);
         close(pipefd[TAP_PIPE_TX]);
-        tap_print_internal_error(errno, test, "failed to fork process");
+        tap_print_internal_error(err, test, "failed to fork process");
         return err;
     }
     close(pipefd[TAP_PIPE_TX]);
 
-    directive = tap_process_test_output(pipefd[TAP_PIPE_RX]);
+    err = tap_process_test_output(pipefd[TAP_PIPE_RX], &directive);
+    if (err != 0) {
+        free(directive);
+        return err;
+    }
     close(pipefd[TAP_PIPE_RX]);
 
     /* Wait for child to exit */
