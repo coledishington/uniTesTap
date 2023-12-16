@@ -57,16 +57,13 @@ argparse() {
     while [ $# -gt 0 ]; do
         case "$1" in
             -h | --help)
-                shift
                 HELP=$YES
                 ;;
             -v | --verbose)
                 VERBOSE=$YES
-                shift
                 ;;
             --check)
                 CHECK=$YES
-                shift
                 ;;
             -*)
                 printf 'Unknown option %s\n' "$1" >&2
@@ -79,9 +76,9 @@ argparse() {
                     printf 'Unknown positional argument: %s' "$1" >&2
                 fi
                 N_POSITIONAL_ARGS=$((N_POSITIONAL_ARGS + 1))
-                shift
                 ;;
         esac
+        shift
     done
 
     [ $N_POSITIONAL_ARGS -le 1 ]
