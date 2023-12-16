@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Avoid errors by disallowing expansions of unset variables
+set -u
+
 # Autoconf aux and m4 will always go in <project-root>/build
 AUX_DIR="build/autotools/aux"
 M4_DIR="build/autotools/m4"
@@ -9,6 +12,7 @@ CACHE=.autogen_cache
 # autogen arguments
 BUILD_DIR=
 VERBOSE=
+CHECK=
 HELP=
 
 # Cache arguments
