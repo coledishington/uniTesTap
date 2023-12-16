@@ -30,6 +30,8 @@ struct test {
 struct tap_string;
 typedef struct tap_string tap_string_t;
 
+int tap_pipe_setup(int fds[2]);
+
 tap_string_t *tap_string_ctor(const char *str);
 
 int tap_string_concat(tap_string_t *tstr, const char *str);
