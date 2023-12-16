@@ -80,6 +80,15 @@ argparse() {
     [ $N_POSITIONAL_ARGS -le 1 ]
 }
 
+read_confirmation() (
+    read -r ANSWER
+    case "$ANSWER" in
+        [yY] | [yY][eE][sS]) ;;
+        *) return 1 ;;
+    esac
+    return 0
+)
+
 cacheparse() {
     while read -r key value; do
         # Ignore any empty values
@@ -163,15 +172,13 @@ if [ -n "$BUILD_DIR" ]; then
 fi
 
 # Check if the cached builddir is being overridden
-if [ -n "$CACHED_BUILD_DIR" ]; then
-    if [ -n "$BUILD_DIR" ] && [ "$BUILD_DIR" != "$CACHED_BUILD_DIR" ] && [ -e "$CACHED_BUILD_DIR" ]; then
+if [ -n "$CACHED_BUILD_DIR" ] && [ "$BUILD_DIR" != "$CACHED_BUILD_DIR" ]; then
+    if [ -n "$BUILD_DIR" ] && [ -e "$CACHED_BUILD_DIR" ]; then
         printf 'builddir exists created at "%s".\n' "$CACHED_BUILD_DIR"
         printf 'Create new builddir at "%s"?\n' "$BUILD_DIR"
-        read -r ANSWER
-        case "$ANSWER" in
-            [yY] | [yY][eE][sS]) ;;
-            *) exit 1 ;;
-        esac
+        if ! read_confirmation; then
+            exit 1
+        fi
     fi
     BUILD_DIR=$CACHED_BUILD_DIR
 fi
