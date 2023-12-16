@@ -17,10 +17,14 @@ BUILD_DIR=
 VERBOSE=
 CHECK=
 CLEAN=
+QUIET=
 HELP=
 
 # Cache arguments
 CACHED_BUILD_DIR=
+
+# Global state
+STDOUT=1
 
 abs_path() (
     IN_PATH=$1
@@ -47,6 +51,7 @@ positional arguments:
 
 options:
   -h, --help                 show this help message and exit
+  -q, --quiet                suppress all normal output
   -v, --verbose              print steps of execution
   --check                    run unit tests
   --clean                    re-build everything
@@ -63,6 +68,9 @@ argparse() {
                 ;;
             -v | --verbose)
                 VERBOSE=$YES
+                ;;
+            -q | --quiet)
+                QUIET=$YES
                 ;;
             --check)
                 CHECK=$YES
@@ -156,7 +164,7 @@ build() (
         cp "$AUTOMAKE_LIBDIR/tap-driver.sh" "$AUX_DIR"
     fi
 
-    autoreconf -i ${CLEAN+-f} ${VERBOSE+-v}
+    autoreconf -i ${CLEAN+-f} ${VERBOSE+-v} 2>&1
     cd "$BUILD_DIR"
 
     # Tidy up files created by make and configure
@@ -177,6 +185,14 @@ if ! argparse "$@"; then
     exit 1
 fi
 
+if [ "$QUIET" = "$YES" ]; then
+    # Redirect all stdout if quiet,
+    # keep stdout open on fd 3 for prompting
+    exec 3<&1
+    exec 1>/dev/null
+    STDOUT=3
+fi
+
 if [ -e "$CACHE" ]; then
     cacheparse
 fi
@@ -189,8 +205,10 @@ fi
 # Check if the cached builddir is being overridden
 if [ -n "$CACHED_BUILD_DIR" ] && [ "$BUILD_DIR" != "$CACHED_BUILD_DIR" ]; then
     if [ -n "$BUILD_DIR" ] && [ -e "$CACHED_BUILD_DIR" ]; then
-        printf 'builddir exists created at "%s".\n' "$CACHED_BUILD_DIR"
-        printf 'Create new builddir at "%s"?\n' "$BUILD_DIR"
+        # shellcheck disable=SC3021
+        printf 'builddir exists created at "%s".\n' "$CACHED_BUILD_DIR" >&$STDOUT
+        # shellcheck disable=SC3021
+        printf 'Create new builddir at "%s"?\n' "$BUILD_DIR" >&$STDOUT
         if ! read_confirmation; then
             exit 1
         fi
