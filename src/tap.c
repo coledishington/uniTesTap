@@ -56,7 +56,10 @@ static char *tap_process_test_output(int test_fd) {
         if (bytes == 0 || *line == '\n') {
             continue;
         }
-        if (strncasecmp(":skip", line, sizeof(":skip") - 1) == 0) {
+        if (strncasecmp(":" TAP_DIRECTIVE_SKIP, line,
+                        sizeof(TAP_DIRECTIVE_SKIP)) == 0 ||
+            strncasecmp(":" TAP_DIRECTIVE_TODO, line,
+                        sizeof(TAP_DIRECTIVE_TODO)) == 0) {
             if (line[bytes - 1] == '\n') {
                 line[bytes - 1] = '\0';
             }
