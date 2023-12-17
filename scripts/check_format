@@ -16,10 +16,11 @@ FILES=
 
 help() {
     cat <<eof
-usage: check_format.sh [-h|OPTION]... file...
+usage: check_format.sh [-h|OPTION]... { gitish | file...}
 Check file against the style and static analysis for the uniTesTap project
 
 positional arguments:
+  gitish                    Git commit-ish or tree-ish. (default: HEAD)
   file                      A file that exists.
 
 options:
@@ -67,6 +68,23 @@ parse_args() {
     done
 }
 
+set_git_diff_files() {
+    staged_arg=
+    if [ "$STAGED" = "$YES" ]; then
+        staged_arg='--staged'
+    fi
+
+    FILES=$(git diff $staged_arg --name-only --diff-filter=ACMR)
+}
+
+set_git_show_files() {
+    arg='HEAD'
+    if [ "$#" -gt 0 ]; then
+        arg=$1
+    fi
+    FILES=$(git show --pretty='' --name-only --diff-filter=ACMR "$arg")
+}
+
 match_shell_script() {
     # Check for hashbang
     case "$(head -n 1 "$1")" in
@@ -81,6 +99,11 @@ match_shell_script() {
     fi
 
     return 1
+}
+
+check_c_souce() {
+    # Style checker
+    clang-format -i -- "$1"
 }
 
 check_shell_script() {
@@ -98,6 +121,10 @@ check_file() {
     case "$file" in
         *.sh)
             check_shell_script "$file"
+            return
+            ;;
+        *.c | *.h)
+            check_c_souce "$file"
             return
             ;;
     esac
@@ -137,6 +164,28 @@ IFS="
 # shellcheck disable=2086
 set -- $POSITIONAL_ARGS
 IFS=$OLD_IFS
+
+if [ "$#" -lt 1 ]; then
+    # Check the first one of index, working dir, or HEAD that contains changed files
+    STAGED="$YES" set_git_diff_files
+    if [ -z "$FILES" ]; then
+        STAGED="$NO" set_git_diff_files
+    fi
+    if [ -z "$FILES" ]; then
+        set_git_show_files
+    fi
+elif ! [ -e "$1" ]; then
+    set_git_show_files "$1"
+fi
+
+if [ -n "$FILES" ]; then
+    OLD_IFS=$IFS
+    IFS="
+    "
+    # shellcheck disable=2086
+    set -- $FILES
+    IFS=$OLD_IFS
+fi
 
 # Allow for paths containing a space
 check_files "$@"
