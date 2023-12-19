@@ -1,0 +1,142 @@
+#!/bin/sh
+
+set -eu
+
+# Constants
+YES='yes'
+NO='no'
+
+# Arguments
+POSITIONAL_ARGS=
+VERBOSE=
+HELP=
+
+# Globals
+FILES=
+
+help() {
+    cat <<eof
+usage: check_format.sh [-h|OPTION]... file...
+Check file against the style and static analysis for the uniTesTap project
+
+positional arguments:
+  file                      A file that exists.
+
+options:
+  -h, --help                 show this help message and exit
+  -v                         print steps of execution
+eof
+}
+
+add_pos_arg() {
+    if [ -n "$POSITIONAL_ARGS" ]; then
+        POSITIONAL_ARGS="$POSITIONAL_ARGS
+        $1"
+    else
+        POSITIONAL_ARGS="$1"
+    fi
+}
+
+parse_args() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h | --help)
+                HELP=$YES
+                ;;
+            -v | --verbose)
+                VERBOSE=$YES
+                ;;
+            --)
+                # Only positional arguments past here
+                break
+                ;;
+            -*)
+                printf 'Unknown option %s\n' "$1" >&2
+                return 1
+                ;;
+            *)
+                add_pos_arg "$1"
+                ;;
+        esac
+        shift
+    done
+
+    while [ $# -gt 0 ]; do
+        add_pos_arg "$1"
+        shift
+    done
+}
+
+match_shell_script() {
+    # Check for hashbang
+    case "$(head -n 1 "$1")" in
+        \#!/bin/sh | \#!@SHELL@)
+            return 0
+            ;;
+    esac
+
+    # Check for shellcheck shell directive
+    if grep -qE '# ?shellcheck.* shell=sh' "$1"; then
+        return 0
+    fi
+
+    return 1
+}
+
+check_shell_script() {
+    # Style checker
+    shfmt --posix --indent 4 --case-indent --simplify --write -- "$1"
+
+    # Static analysis
+    shellcheck -- "$1"
+}
+
+check_file() {
+    file=$1
+
+    # Match extension
+    case "$file" in
+        *.sh)
+            check_shell_script "$file"
+            return
+            ;;
+    esac
+
+    # Match content tags if no extensions are matched
+    if match_shell_script "$file"; then
+        check_shell_script "$file"
+        return
+    fi
+
+    printf 'No matching format tool for "%s"\n' "$file" >&2
+}
+
+check_files() {
+    while [ $# -gt 0 ]; do
+        check_file "$1"
+        shift
+    done
+}
+
+if ! parse_args "$@"; then
+    exit 1
+fi
+
+if [ "$HELP" = "$YES" ]; then
+    help
+    exit 1
+fi
+
+if [ "$VERBOSE" = "$YES" ]; then
+    set -x
+fi
+
+OLD_IFS=$IFS
+IFS="
+"
+# shellcheck disable=2086
+set -- $POSITIONAL_ARGS
+IFS=$OLD_IFS
+
+# Allow for paths containing a space
+check_files "$@"
