@@ -13,7 +13,7 @@
 #include <taptest.h>
 #include <unistd.h>
 
-#define MAX_TESTS 10
+#define MAX_TESTS 200
 
 struct cfg {
     size_t n_tests;

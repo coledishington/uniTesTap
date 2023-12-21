@@ -1,0 +1,52 @@
+#!@SHELL@
+# shellcheck shell=sh
+
+# Avoid errors by disallowing expansions of unset variables
+set -u
+
+# Constants
+SRC_DIR=@abs_srcdir@
+GOLDEN_DIR="$SRC_DIR/testdata"
+
+test_output_xfrm() {
+    # Transform any paths that may contain system specific component
+    # (like the user running the test).
+    @SED@ -e 's|/.\+/tapcore/tests/\([^/.]\+[.]c\):[0-9]\+|**/\1:LINENUM|g'
+}
+
+run_tests() {
+    TEST_ID=1
+
+    for TEST_PATH in ./test_*; do
+        if ! [ -x "$TEST_PATH" ]; then
+            continue
+        fi
+
+        TEST_NAME=$(basename "$TEST_PATH")
+        GOLDEN_PATH="$GOLDEN_DIR/$TEST_NAME.golden"
+        if ! [ -e "$GOLDEN_PATH" ]; then
+            printf '# Ignoring potential test '%s' due to no golden file\n' "$TEST_NAME"
+            continue
+        fi
+
+        if $TEST_PATH | test_output_xfrm | diff "$GOLDEN_PATH" '-' >/dev/null 2>&1; then
+            printf 'ok %d - %s\n' "$TEST_ID" "$TEST_NAME"
+        else
+            printf 'not ok %d - %s\n' "$TEST_ID" "$TEST_NAME"
+        fi
+        TEST_ID=$((TEST_ID + 1))
+    done
+
+    # Add extra test case for ensuring all golden files belong to a test
+    DESCRIPTION="Check there is a test per golden file"
+    N_GOLDEN_FILES=$(find "$GOLDEN_DIR" -name "*.golden" | wc -l)
+    if [ "$N_GOLDEN_FILES" = "$((TEST_ID - 1))" ]; then
+        printf 'ok %d - %s\n' "$TEST_ID" "$DESCRIPTION"
+    else
+        printf 'not ok %d - %s\n' "$TEST_ID" "$DESCRIPTION"
+    fi
+
+    printf '1..%d\n' "$TEST_ID"
+}
+
+run_tests
