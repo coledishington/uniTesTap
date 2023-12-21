@@ -12,13 +12,4 @@ lib_LTLIBRARIES = libtap.la
 libtap_la_SOURCES = tap.c
 libtap_la_LIBADD = $(LIBTAPSTRUCT) $(LIBTAPIO)
 
-check_PROGRAMS = tap.test
-tap_test_SOURCES = test_tap.c
-tap_test_LDADD = libtap.la
-
-TEST_LOG_DRIVER = \
-    env AM_TAP_AWK='@AWK@' @SHELL@ \
-    @abs_top_srcdir@/build/autotools/aux/tap-driver.sh
-
-TESTS = $(check_PROGRAMS)
-EXTRA_DIST = $(check_PROGRAMS)
+SUBDIRS = tests

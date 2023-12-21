@@ -12,6 +12,7 @@ AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AM_PROG_AR
 AC_PROG_AWK
 AC_PROG_CC
+AC_PROG_SED
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 LT_INIT
@@ -21,5 +22,6 @@ AC_CONFIG_FILES([
     tapstruct/Makefile
     tapio/Makefile
     tapcore/Makefile
+    tapcore/tests/Makefile
 ])
 AC_OUTPUT
