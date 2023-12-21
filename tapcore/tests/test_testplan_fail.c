@@ -4,6 +4,6 @@
 #include "internal.h"
 
 int main(void) {
-    tap_register(fail, NULL);
-    tap_runall();
+    tap_register(NULL, fail, NULL);
+    tap_runall_and_cleanup(NULL);
 }
