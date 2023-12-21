@@ -5,20 +5,20 @@
  */
 #include <errno.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "internal.h"
+#include <sys/types.h>
+#include <tapstruct.h>
+#include <taputil.h>
 
 struct tap_string {
     size_t alloced;
     size_t len;
     char *data;
 };
-typedef struct tap_string tap_string_t;
 
 static size_t tap_ceil_power_two(size_t n) {
     /* Bit twiddling

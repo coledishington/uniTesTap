@@ -1,10 +1,8 @@
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "internal.h"
+#include <tapstruct.h>
+#include <taptest.h>
 
 void tap_print_testpoint(bool success, struct test *test,
                          const char *directive) {

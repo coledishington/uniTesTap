@@ -1,10 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <signal.h>
+#include <taputil.h>
 #include <unistd.h>
-
-#include "internal.h"
 
 static int add_fdflags(int fd, int add_flags) {
     int fd_flags;
