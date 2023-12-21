@@ -8,9 +8,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <tap.h>
+#include <tapio.h>
+#include <tapstruct.h>
+#include <taptest.h>
 #include <unistd.h>
-
-#include "internal.h"
 
 #define MAX_TESTS 10
 
