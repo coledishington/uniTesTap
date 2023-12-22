@@ -233,7 +233,9 @@ if [ "$VERBOSE" = "$YES" ]; then
     set -x
 fi
 
-build
+if ! build; then
+    exit 1
+fi
 
 if [ "$CHECK" = "$YES" ]; then
     check
