@@ -1,5 +1,6 @@
 #ifndef __TAP_STRUCT_H__
 #define __TAP_STRUCT_H__
+#include <stdarg.h>
 #include <stdbool.h>
 
 enum tap_cmd_type {
@@ -24,6 +25,8 @@ int tap_cmd_strndup(enum tap_cmd_type type, const char *line, size_t n_copy,
 tap_string_t *tap_string_ctor(const char *str);
 
 int tap_string_concat(tap_string_t *tstr, const char *str);
+
+int tap_string_concat_vprintf(tap_string_t *tstr, const char *fmt, va_list ap);
 
 int tap_string_concat_printf(tap_string_t *tstr, const char *fmt, ...);
 
