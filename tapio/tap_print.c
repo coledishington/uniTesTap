@@ -5,7 +5,7 @@
 #include <tapstruct.h>
 #include <taptest.h>
 
-static void tap_print_line(const char *line) {
+void tap_print_line(const char *line) {
     char *newline;
     int width;
 
@@ -31,6 +31,7 @@ void tap_printf_line(const char *fmt, ...) {
     str = tap_string_dtor(tstr, false);
 
     tap_print_line(str);
+    free(str);
 }
 
 void tap_print_testpoint(bool success, struct test *test,

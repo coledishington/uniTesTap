@@ -33,7 +33,9 @@ test_tap = test_tap.test
 sh_subst = \
 	@SED@ -e 's,[@]SHELL[@],@SHELL@,g' \
           -e 's,[@]abs_srcdir[@],@abs_srcdir@,g' \
-          -e 's,[@]SED[@],@SED@,g'
+          -e 's,[@]LIBTOOL[@],@LIBTOOL@,g' \
+          -e 's,[@]SED[@],@SED@,g' \
+          -e 's,[@]VALGRIND[@],@VALGRIND@,g'
 $(test_tap)$(EXEEXT): $(test_tap).in Makefile
 	$(sh_subst) < @abs_srcdir@/$(test_tap).in > $(test_tap)$(EXEEXT)
 	chmod +x $(test_tap)$(EXEEXT)
