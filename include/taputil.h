@@ -17,6 +17,7 @@
 
 #define TAP_DIRECTIVE_SKIP "SKIP"
 #define TAP_DIRECTIVE_TODO "TODO"
+#define TAP_BAILOUT "Bail out!"
 #define TAP_PIPE_RX 0
 #define TAP_PIPE_TX 1
 

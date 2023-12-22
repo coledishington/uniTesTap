@@ -2,8 +2,24 @@
 #define __TAP_STRUCT_H__
 #include <stdbool.h>
 
+enum tap_cmd_type {
+    tap_cmd_type_unknown = -1,
+    tap_cmd_type_todo = 0,
+    tap_cmd_type_skip,
+    tap_cmd_type_bail,
+};
+
+struct tap_cmd {
+    enum tap_cmd_type type;
+    char str[];
+};
+typedef struct tap_cmd tap_cmd_t;
+
 struct tap_string;
 typedef struct tap_string tap_string_t;
+
+int tap_cmd_strndup(enum tap_cmd_type type, const char *line, size_t n_copy,
+                    tap_cmd_t **d_cmd);
 
 tap_string_t *tap_string_ctor(const char *str);
 

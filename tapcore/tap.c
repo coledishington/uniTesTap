@@ -11,6 +11,7 @@
 #include <tapio.h>
 #include <tapstruct.h>
 #include <taptest.h>
+#include <taputil.h>
 #include <unistd.h>
 
 #define MAX_TESTS 200
@@ -27,8 +28,9 @@ static inline TAP *get_handle(struct TAP *tap) { return tap ? tap : handle; }
 
 static void tap_report_test(struct test *test, int wres,
                             const char *directive) {
-    bool passed = false;
+    bool passed;
 
+    passed = false;
     if (WIFEXITED(wres)) {
         passed = WEXITSTATUS(wres) == 0;
     } else if (WIFSIGNALED(wres)) {
@@ -47,38 +49,8 @@ static void tap_report_test(struct test *test, int wres,
     tap_print_testpoint(passed, test, directive);
 }
 
-static int tap_parse_directive(const char *line, char **d_directive) {
-    const char *newline;
-    char *directive;
-    size_t cmd_len;
-
-    if (strncasecmp(":" TAP_DIRECTIVE_SKIP, line, sizeof(TAP_DIRECTIVE_SKIP)) !=
-            0 &&
-        strncasecmp(":" TAP_DIRECTIVE_TODO, line, sizeof(TAP_DIRECTIVE_TODO)) !=
-            0) {
-        return 0;
-    }
-
-    /* Copy everything before the first newline */
-    newline = strchr(line, '\n');
-    if (newline) {
-        cmd_len = newline - line;
-    } else {
-        cmd_len = strlen(line);
-    }
-
-    /* Skip past the ':' */
-    directive = strndup(line + 1, cmd_len - 1);
-    if (!directive) {
-        return errno;
-    }
-
-    *d_directive = directive;
-    return 0;
-}
-
-static int tap_process_test_output(int test_fd, char **d_directive) {
-    char *directive = NULL;
+static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
+    tap_cmd_t *cmd = NULL;
     size_t line_len = 0;
     char *line = NULL;
     ssize_t bytes;
@@ -86,32 +58,34 @@ static int tap_process_test_output(int test_fd, char **d_directive) {
 
     test_fp = fdopen(test_fd, "r");
     for (; (bytes = getline(&line, &line_len, test_fp)) != -1;) {
-        char *ln_directive = NULL;
+        tap_cmd_t *line_cmd = NULL;
         int err;
 
         if (bytes == 0 || *line == '\n') {
             continue;
         }
-        err = tap_parse_directive(line, &ln_directive);
+
+        err = tap_parse_cmd(line, &line_cmd);
         if (err != 0) {
             break;
         }
-        if (!ln_directive) {
+        if (!line_cmd) {
             /* Debug from the test, output as TAP comment */
             printf("# %s\n", line);
             continue;
         }
-        if (directive) {
+        if (cmd) {
             /* Only allow one directive command per test, warn the extra is
              * ignored */
-            printf("# One directive command per test: ignoring '%s'\n",
-                   ln_directive);
-            free(ln_directive);
+            printf("# One directive command per test: ignoring '%s'",
+                   line_cmd->str);
+            free(line_cmd);
+            continue;
         }
-        directive = ln_directive;
+        cmd = line_cmd;
     }
-    if (directive) {
-        *d_directive = directive;
+    if (cmd) {
+        *d_cmd = cmd;
     }
     free(line);
     return 0;
@@ -125,9 +99,9 @@ static void tap_run_test_and_exit(struct test *test) {
     _exit(res);
 }
 
-static int tap_evaluate(struct test *test) {
+static int tap_evaluate(struct test *test, bool *bailed) {
     int pipefd[2] = {-1, -1};
-    char *directive = NULL;
+    tap_cmd_t *cmd = NULL;
     int wres, err;
     pid_t cpid;
 
@@ -159,9 +133,9 @@ static int tap_evaluate(struct test *test) {
     }
     close(pipefd[TAP_PIPE_TX]);
 
-    err = tap_process_test_output(pipefd[TAP_PIPE_RX], &directive);
+    err = tap_process_test_output(pipefd[TAP_PIPE_RX], &cmd);
     if (err != 0) {
-        free(directive);
+        free(cmd);
         return err;
     }
     close(pipefd[TAP_PIPE_RX]);
@@ -169,13 +143,22 @@ static int tap_evaluate(struct test *test) {
     /* Wait for child to exit */
     cpid = waitpid(cpid, &wres, 0);
     if (cpid < 0) {
+        free(cmd);
         /* Child process is lost */
         return errno;
     }
 
-    /* Report test success */
-    tap_report_test(test, wres, directive);
-    free(directive);
+    /* Test status is meaningless if the test bailed */
+    *bailed = cmd && cmd->type == tap_cmd_type_bail;
+    if (*bailed) {
+        printf("%s\n", cmd->str);
+        free(cmd);
+        return 0;
+    }
+
+    /* Report test status */
+    tap_report_test(test, wres, cmd ? cmd->str : NULL);
+    free(cmd);
     return 0;
 }
 
@@ -231,13 +214,16 @@ int tap_runall(struct TAP *tap) {
     tap = get_handle(tap);
     printf("1..%zu\n", tap->n_tests);
     for (size_t idx = 0; idx < tap->n_tests; idx++) {
+        bool test_bailed = false;
         struct test *test;
 
         test = &tap->tests[idx];
-        err = tap_evaluate(test);
+        err = tap_evaluate(test, &test_bailed);
         if (err != 0) {
-            printf("Bail out! internal test runner error %s(%d): ",
+            printf(TAP_BAILOUT " internal test runner error %s(%d): ",
                    strerror(err), err);
+            break;
+        } else if (test_bailed) {
             break;
         }
     }
