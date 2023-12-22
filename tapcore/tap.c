@@ -71,14 +71,14 @@ static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
         }
         if (!line_cmd) {
             /* Debug from the test, output as TAP comment */
-            printf("# %s\n", line);
+            tap_printf_line("# %s\n", line);
             continue;
         }
         if (cmd) {
             /* Only allow one directive command per test, warn the extra is
              * ignored */
-            printf("# One directive command per test: ignoring '%s'",
-                   line_cmd->str);
+            tap_printf_line("# One directive command per test: ignoring '%s'",
+                            line_cmd->str);
             free(line_cmd);
             continue;
         }
@@ -151,7 +151,7 @@ static int tap_evaluate(struct test *test, bool *bailed) {
     /* Test status is meaningless if the test bailed */
     *bailed = cmd && cmd->type == tap_cmd_type_bail;
     if (*bailed) {
-        printf("%s\n", cmd->str);
+        tap_printf_line(cmd->str);
         free(cmd);
         return 0;
     }

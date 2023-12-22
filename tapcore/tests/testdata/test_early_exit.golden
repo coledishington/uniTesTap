@@ -2,7 +2,6 @@
 ok 1
 not ok 2
 # test_early_exit: **/test_early_exit.c:LINENUM: assert_zero: Assertion `0' failed.
-
 # test terminated via Aborted(6)
 not ok 3
 # test terminated via Segmentation fault(11)

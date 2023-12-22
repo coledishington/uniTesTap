@@ -113,34 +113,47 @@ int tap_string_concat(tap_string_t *tstr, const char *str) {
     return 0;
 }
 
-int tap_string_concat_printf(tap_string_t *tstr, const char *fmt, ...) {
+int tap_string_concat_vprintf(tap_string_t *tstr, const char *fmt, va_list ap) {
+    va_list ap_copy;
     char buf[256];
     int n_written;
-    va_list ap;
     int err;
 
-    va_start(ap, fmt);
+    /* Copy ap for later if buf doesn't fit the resultant string */
+    va_copy(ap_copy, ap);
+
     n_written = vsnprintf(buf, ARRAY_LEN(buf), fmt, ap);
-    va_end(ap);
     if (n_written < 0) {
+        va_end(ap_copy);
         return n_written;
     }
 
     err = tap_string_grow_to_fit(tstr, n_written);
     if (err != 0) {
+        va_end(ap_copy);
         return err;
     }
 
     if (n_written + 1 <= ARRAY_LEN(buf)) {
         tap_string_concat_danger(tstr, buf, n_written);
+        va_end(ap_copy);
         return 0;
     }
 
-    va_start(ap, fmt);
     n_written =
         vsnprintf(tstr->data + tstr->len, tstr->alloced - tstr->len, fmt, ap);
-    va_end(ap);
+    va_end(ap_copy);
     return n_written < 0 ? -1 : 0;
+}
+
+int tap_string_concat_printf(tap_string_t *tstr, const char *fmt, ...) {
+    va_list ap;
+    int err;
+
+    va_start(ap, fmt);
+    err = tap_string_concat_vprintf(tstr, fmt, ap);
+    va_end(ap);
+    return err;
 }
 
 char *tap_string_dtor(tap_string_t *tstr, bool free_str) {

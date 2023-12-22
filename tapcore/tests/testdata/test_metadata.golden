@@ -1,3 +1,5 @@
-1..2
+1..4
 ok 1 - Test description
 not ok 2 - Test description
+ok 3 - Test description with newline
+ok 4 - Test description with two newlines

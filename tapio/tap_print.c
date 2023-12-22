@@ -1,8 +1,37 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tapstruct.h>
 #include <taptest.h>
+
+static void tap_print_line(const char *line) {
+    char *newline;
+    int width;
+
+    /* Always print one newline, but never more */
+    newline = strchr(line, '\n');
+    if (newline) {
+        width = newline - line;
+    } else {
+        width = strlen(line);
+    }
+    printf("%.*s\n", width, line);
+}
+
+void tap_printf_line(const char *fmt, ...) {
+    tap_string_t *tstr;
+    va_list ap;
+    char *str;
+
+    tstr = tap_string_ctor(NULL);
+    va_start(ap, fmt);
+    tap_string_concat_vprintf(tstr, fmt, ap);
+    va_end(ap);
+    str = tap_string_dtor(tstr, false);
+
+    tap_print_line(str);
+}
 
 void tap_print_testpoint(bool success, struct test *test,
                          const char *directive) {
@@ -21,7 +50,7 @@ void tap_print_testpoint(bool success, struct test *test,
         tap_string_concat(tstr, directive);
     }
     str = tap_string_dtor(tstr, false);
-    printf("%s\n", str);
+    tap_print_line(str);
     free(str);
 }
 
@@ -34,7 +63,7 @@ void tap_print_internal_error(int err, struct test *test, const char *reason) {
     tap_string_concat_printf(tstr, "# internal test runner error %s(%d): ",
                              strerror(err), err, reason);
     str = tap_string_dtor(tstr, false);
-    printf("%s\n", str);
+    tap_print_line(str);
     free(str);
     tap_print_testpoint(false, test, NULL);
 }
