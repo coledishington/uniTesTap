@@ -48,6 +48,22 @@ int tap_parse_cmd(const char *line, struct tap_cmd **d_cmd) {
         return err;
     }
 
+    /* Overwrite TAP command to be the most broadly supported version */
+    switch (ctype)
+    {
+    case tap_cmd_type_skip:
+        memcpy(cmd->str, TAP_DIRECTIVE_SKIP, sizeof(TAP_DIRECTIVE_SKIP) - 1);
+        break;
+    case tap_cmd_type_todo:
+        memcpy(cmd->str, TAP_DIRECTIVE_TODO, sizeof(TAP_DIRECTIVE_TODO) - 1);
+        break;
+    case tap_cmd_type_bail:
+        memcpy(cmd->str, TAP_BAILOUT, sizeof(TAP_BAILOUT) - 1);
+        break;
+    default:
+        break;
+    }
+
     *d_cmd = cmd;
     return 0;
 }
