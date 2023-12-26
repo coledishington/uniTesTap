@@ -7,7 +7,12 @@ struct tap_duration {
     struct timespec t1, t0;
 };
 
-double tap_duration_to_secs(struct tap_duration *d);
+struct tap_seconds {
+    char mprefix;
+    double secs;
+};
+
+struct tap_seconds tap_duration_to_secs(struct tap_duration *d);
 
 int tap_pipe_setup(int fds[2]);
 

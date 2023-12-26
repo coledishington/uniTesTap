@@ -40,8 +40,8 @@ void tap_printf_line(const char *fmt, ...) {
 
 void tap_print_testpoint(bool success, struct test *test,
                          struct tap_duration *duration, const char *directive) {
+    struct tap_seconds secs;
     tap_string_t *tstr;
-    double secs;
     char *str;
 
     tstr = tap_string_ctor(NULL);
@@ -51,8 +51,13 @@ void tap_print_testpoint(bool success, struct test *test,
     if (test->description) {
         tap_string_concat_printf(tstr, "%s ", test->description);
     }
+
     secs = tap_duration_to_secs(duration);
-    tap_string_concat_printf(tstr, "(%.3gs)", secs);
+    if (secs.mprefix != 0) {
+        tap_string_concat_printf(tstr, "(%.3g%cs)", secs.secs, secs.mprefix);
+    } else {
+        tap_string_concat_printf(tstr, "(%.3gs)", secs.secs);
+    }
 
     if (directive) {
         tap_string_concat(tstr, " # ");
