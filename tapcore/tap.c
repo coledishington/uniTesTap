@@ -45,9 +45,9 @@ static void tap_report_testrun(struct test_run *run) {
         if (!sig_name) {
             sig_name = "UNKNOWN";
         }
-        printf("# terminated via %s(%d)\n", sig_name, sig);
+        printf("# test %zu: terminated via %s(%d)\n", test->id, sig_name, sig);
     } else {
-        printf("# exited for unknown reason\n");
+        printf("# test %zu: exited for unknown reason\n", test->id);
     }
 
     if (tap_cmd_is_directive(run->cmd)) {

@@ -46,14 +46,15 @@ static int tap_process_testrun_output(struct test_run *testrun) {
         }
         if (!line_cmd) {
             /* Debug from the test, output as TAP comment */
-            tap_printf_line("# %s\n", line);
+            tap_printf_line("# test %zu: %s\n", test->id, line);
             continue;
         }
         if (cmd) {
             /* Only allow one directive command per test, warn the extra is
              * ignored */
-            tap_printf_line("# One directive command per test: ignoring '%s'",
-                            line_cmd->str);
+            tap_printf_line(
+                "# test %zu: One directive command per test: ignoring '%s'",
+                test->id, line_cmd->str);
             free(line_cmd);
             continue;
         }
