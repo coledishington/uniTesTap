@@ -9,7 +9,7 @@ AM_CPPFLAGS = -I $(PRIVATE_INCLUDE_PATH) -I $(PUBLIC_INCLUDE_PATH)
 include_HEADERS = $(PUBLIC_INCLUDE_PATH)/tap.h
 
 lib_LTLIBRARIES = libtap.la
-libtap_la_SOURCES = tap.c
+libtap_la_SOURCES = tap.c testrun.c
 libtap_la_LIBADD = $(LIBTAPSTRUCT) $(LIBTAPIO)
 
 SUBDIRS = tests
