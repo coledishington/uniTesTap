@@ -13,4 +13,10 @@ struct test_run {
     int exitstatus;
 };
 
+int tap_start_testrun(struct test *test, struct test_run *testrun);
+
+int tap_wait_for_testrun(struct test_run *testrun);
+
+void tap_cleanup_testrun(struct test_run *testrun);
+
 #endif /* __INTERNAL_H__ */
