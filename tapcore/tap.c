@@ -124,7 +124,8 @@ static int tap_evaluate(struct test *test, bool *bailed) {
         close(pipefd[TAP_PIPE_TX]);
         /* Child process will run test and exit */
         tap_run_test_and_exit(test);
-        _exit(-1);
+        /* Child should have already exited */
+        _exit(EINVAL);
     }
     if (cpid == -1) {
         err = errno;
