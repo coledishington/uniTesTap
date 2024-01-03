@@ -19,6 +19,21 @@ typedef struct tap_cmd tap_cmd_t;
 struct tap_string;
 typedef struct tap_string tap_string_t;
 
+static inline bool tap_cmd_is_bailed(tap_cmd_t *cmd) {
+    return cmd && cmd->type == tap_cmd_type_bail;
+}
+
+static inline bool tap_cmd_is_directive(tap_cmd_t *cmd) {
+    int ctype;
+
+    if (!cmd) {
+        return false;
+    }
+
+    ctype = cmd->type;
+    return ctype == tap_cmd_type_skip || ctype == tap_cmd_type_todo;
+}
+
 int tap_cmd_strndup(enum tap_cmd_type type, const char *line, size_t n_copy,
                     tap_cmd_t **d_cmd);
 

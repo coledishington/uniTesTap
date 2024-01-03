@@ -152,7 +152,7 @@ static int tap_evaluate(struct test *test, bool *bailed) {
     }
 
     /* Test status is meaningless if the test bailed */
-    *bailed = cmd && cmd->type == tap_cmd_type_bail;
+    *bailed = tap_cmd_is_bailed(cmd);
     if (*bailed) {
         tap_print_line(cmd->str);
         free(cmd);
@@ -160,7 +160,7 @@ static int tap_evaluate(struct test *test, bool *bailed) {
     }
 
     /* Report test status */
-    tap_report_test(test, wres, cmd ? cmd->str : NULL);
+    tap_report_test(test, wres, tap_cmd_is_directive(cmd) ? cmd->str : NULL);
     free(cmd);
     return 0;
 }
