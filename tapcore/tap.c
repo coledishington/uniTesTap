@@ -55,11 +55,11 @@ static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
     char *line = NULL;
     ssize_t bytes;
     FILE *test_fp;
+    int err = 0;
 
     test_fp = fdopen(test_fd, "r");
     for (; (bytes = getline(&line, &line_len, test_fp)) != -1;) {
         tap_cmd_t *line_cmd = NULL;
-        int err;
 
         if (bytes == 0 || *line == '\n') {
             continue;
@@ -84,11 +84,13 @@ static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
         }
         cmd = line_cmd;
     }
-    if (cmd) {
+    if (err != 0) {
+        free(cmd);
+    } else if (cmd) {
         *d_cmd = cmd;
     }
     free(line);
-    return 0;
+    return err;
 }
 
 static void tap_run_test_and_exit(struct test *test) {
