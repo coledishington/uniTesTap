@@ -14,6 +14,8 @@
 #include <taputil.h>
 #include <unistd.h>
 
+#include "internal.h"
+
 #define MAX_TESTS 200
 
 struct TAP {
@@ -26,11 +28,12 @@ static struct TAP *handle = NULL;
 
 static inline TAP *get_handle(struct TAP *tap) { return tap ? tap : handle; }
 
-static void tap_report_test(struct test *test, int wres,
-                            const char *directive) {
-    bool passed;
+static void tap_report_testrun(struct test_run *run) {
+    struct test *test = &run->test;
+    int wres = run->exitstatus;
+    const char *directive = NULL;
+    bool passed = false;
 
-    passed = false;
     if (WIFEXITED(wres)) {
         passed = WEXITSTATUS(wres) == 0;
     } else if (WIFSIGNALED(wres)) {
@@ -46,10 +49,14 @@ static void tap_report_test(struct test *test, int wres,
     } else {
         printf("# test %zu exited for unknown reason\n", test->id);
     }
+
+    if (tap_cmd_is_directive(run->cmd)) {
+        directive = run->cmd->str;
+    }
     tap_print_testpoint(passed, test, directive);
 }
 
-static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
+static int tap_process_testrun_output(struct test_run *testrun) {
     tap_cmd_t *cmd = NULL;
     size_t line_len = 0;
     char *line = NULL;
@@ -57,7 +64,7 @@ static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
     FILE *test_fp;
     int err = 0;
 
-    test_fp = fdopen(test_fd, "r");
+    test_fp = fdopen(testrun->outfd, "r");
     for (; (bytes = getline(&line, &line_len, test_fp)) != -1;) {
         tap_cmd_t *line_cmd = NULL;
 
@@ -87,7 +94,7 @@ static int tap_process_test_output(int test_fd, tap_cmd_t **d_cmd) {
     if (err != 0) {
         free(cmd);
     } else if (cmd) {
-        *d_cmd = cmd;
+        testrun->cmd = cmd;
     }
     free(line);
     return err;
@@ -101,11 +108,31 @@ static void tap_run_test_and_exit(struct test *test) {
     _exit(res);
 }
 
-static int tap_evaluate(struct test *test, bool *bailed) {
+static int tap_wait_for_testrun(struct test_run *run) {
+    int exitstatus;
+    pid_t rpid;
+    int err;
+
+    err = tap_process_testrun_output(run);
+    if (err != 0) {
+        return err;
+    }
+
+    rpid = waitpid(run->pid, &exitstatus, 0);
+    if (rpid == -1) {
+        err = errno;
+        tap_print_internal_error(err, &run->test, "failed waiting for test");
+        return err;
+    }
+
+    run->exitstatus = exitstatus;
+    return 0;
+}
+
+static int tap_start_testrun(struct test *test, struct test_run *run) {
     int pipefd[2] = {-1, -1};
-    tap_cmd_t *cmd = NULL;
-    int wres, err;
     pid_t cpid;
+    int err;
 
     /* Communicate fail condition on pipe */
     err = tap_pipe_setup(pipefd);
@@ -136,33 +163,22 @@ static int tap_evaluate(struct test *test, bool *bailed) {
     }
     close(pipefd[TAP_PIPE_TX]);
 
-    err = tap_process_test_output(pipefd[TAP_PIPE_RX], &cmd);
-    if (err != 0) {
-        free(cmd);
-        return err;
-    }
-    close(pipefd[TAP_PIPE_RX]);
-
-    /* Wait for child to exit */
-    cpid = waitpid(cpid, &wres, 0);
-    if (cpid < 0) {
-        free(cmd);
-        /* Child process is lost */
-        return errno;
-    }
-
-    /* Test status is meaningless if the test bailed */
-    *bailed = tap_cmd_is_bailed(cmd);
-    if (*bailed) {
-        tap_print_line(cmd->str);
-        free(cmd);
-        return 0;
-    }
-
-    /* Report test status */
-    tap_report_test(test, wres, tap_cmd_is_directive(cmd) ? cmd->str : NULL);
-    free(cmd);
+    *run = (struct test_run){
+        .test = *test,
+        .outfd = pipefd[TAP_PIPE_RX],
+        .pid = cpid,
+        .exitstatus = -1,
+        .cmd = NULL,
+    };
     return 0;
+}
+
+static void tap_cleanup_testrun(struct test_run *testrun) {
+    close(testrun->outfd);
+    testrun->outfd = -1;
+    free(testrun->cmd);
+    testrun->cmd = NULL;
+    testrun->pid = -1;
 }
 
 int tap_init(struct TAP **d_tap) {
@@ -217,18 +233,32 @@ int tap_runall(struct TAP *tap) {
     tap = get_handle(tap);
     printf("1..%zu\n", tap->n_tests);
     for (size_t idx = 0; idx < tap->n_tests; idx++) {
-        bool test_bailed = false;
-        struct test *test;
+        struct test *test = &tap->tests[idx];
+        struct test_run testrun = {0};
 
-        test = &tap->tests[idx];
-        err = tap_evaluate(test, &test_bailed);
+        err = tap_start_testrun(test, &testrun);
         if (err != 0) {
-            printf(TAP_BAILOUT " internal test runner error %s(%d): ",
-                   strerror(err), err);
-            break;
-        } else if (test_bailed) {
             break;
         }
+
+        err = tap_wait_for_testrun(&testrun);
+        if (err != 0) {
+            break;
+        }
+
+        if (tap_cmd_is_bailed(testrun.cmd)) {
+            tap_print_line(testrun.cmd->str);
+            tap_cleanup_testrun(&testrun);
+            break;
+        }
+
+        tap_report_testrun(&testrun);
+        tap_cleanup_testrun(&testrun);
+    }
+
+    if (err != 0) {
+        printf(TAP_BAILOUT " internal test runner error %s(%d): ",
+               strerror(err), err);
     }
     return err;
 }
