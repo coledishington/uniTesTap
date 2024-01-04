@@ -60,11 +60,13 @@ void tap_print_internal_error(int err, struct test *test, const char *reason) {
     char *str;
 
     tstr = tap_string_ctor(NULL);
-
-    tap_string_concat_printf(tstr, "# internal test runner error %s(%d): ",
-                             strerror(err), err, reason);
+    tap_string_concat(tstr, "# internal test runner error");
+    if (test) {
+        tap_string_concat_printf(tstr, " whilst handling test %zu", test->id);
+    }
+    tap_string_concat_printf(tstr, ": %s(%d) %s", strerror(err), err, reason);
     str = tap_string_dtor(tstr, false);
+
     tap_print_line(str);
     free(str);
-    tap_print_testpoint(false, test, NULL);
 }
