@@ -12,6 +12,7 @@
 #include <taptest.h>
 #include <taputil.h>
 
+#include "config.h"
 #include "internal.h"
 
 #define MAX_TESTS 200
@@ -51,7 +52,7 @@ static void tap_report_testrun(struct test_run *run) {
     if (tap_cmd_is_directive(run->cmd)) {
         directive = run->cmd->str;
     }
-    tap_print_testpoint(passed, test, directive);
+    tap_print_testpoint(passed, test, &run->duration, directive);
 }
 
 int tap_init(struct TAP **d_tap) {

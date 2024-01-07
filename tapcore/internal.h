@@ -11,6 +11,7 @@ struct test_run {
     pid_t pid;
     int outfd;
     int exitstatus;
+    struct tap_duration duration;
 };
 
 int tap_start_testrun(struct test *test, struct test_run *testrun);

@@ -8,8 +8,10 @@
 #include <tapio.h>
 #include <tapstruct.h>
 #include <taptest.h>
+#include <time.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "internal.h"
 
 static int tap_process_testrun_output(struct test_run *testrun) {
@@ -65,6 +67,7 @@ static void tap_run_test_and_exit(struct test *test) {
 }
 
 int tap_start_testrun(struct test *test, struct test_run *run) {
+    struct timespec start;
     int pipefd[2] = {-1, -1};
     pid_t cpid;
     int err;
@@ -73,6 +76,12 @@ int tap_start_testrun(struct test *test, struct test_run *run) {
     err = tap_pipe_setup(pipefd);
     if (err != 0) {
         tap_print_internal_error(err, test, "failed to create pipe");
+        return err;
+    }
+
+    err = clock_gettime(CLOCK_MONOTONIC, &start);
+    if (err != 0) {
+        tap_print_internal_error(err, test, "failed to get monotonic time");
         return err;
     }
 
@@ -104,6 +113,10 @@ int tap_start_testrun(struct test *test, struct test_run *run) {
         .pid = cpid,
         .exitstatus = -1,
         .cmd = NULL,
+        .duration =
+            (struct tap_duration){
+                .t0 = start,
+            },
     };
     return 0;
 }
@@ -125,6 +138,12 @@ int tap_wait_for_testrun(struct test_run *run) {
         return err;
     }
 
+    err = clock_gettime(CLOCK_MONOTONIC, &run->duration.t1);
+    if (err != 0) {
+        tap_print_internal_error(err, &run->test,
+                                 "failed to get monotonic time");
+        return err;
+    }
     run->exitstatus = exitstatus;
     return 0;
 }

@@ -9,6 +9,8 @@
 #include <tapstruct.h>
 #include <taputil.h>
 
+#include "config.h"
+
 #define STARTSWITH_CMD(line, cmd) (strncasecmp(":" cmd, line, sizeof(cmd)) == 0)
 
 static enum tap_cmd_type line_to_cmd_type(const char *line) {

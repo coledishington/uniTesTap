@@ -14,6 +14,8 @@
 #include <tapstruct.h>
 #include <taputil.h>
 
+#include "config.h"
+
 struct tap_string {
     size_t alloced;
     size_t len;

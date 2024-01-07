@@ -1,5 +1,5 @@
 1..4
-ok 1 - Test description
-not ok 2 - Test description
-ok 3 - Test description with newline
-ok 4 - Test description with two newlines
+ok 1 - Test description (***REPLACED TIME***)
+not ok 2 - Test description (***REPLACED TIME***)
+ok 3 - Test description with newline (***REPLACED TIME***)
+ok 4 - Test description with two newlines (***REPLACED TIME***)

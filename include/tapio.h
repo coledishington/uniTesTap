@@ -3,6 +3,12 @@
 #include <tapstruct.h>
 #include <taptest.h>
 
+struct tap_duration {
+    struct timespec t1, t0;
+};
+
+double tap_duration_to_secs(struct tap_duration *d);
+
 int tap_pipe_setup(int fds[2]);
 
 int tap_parse_cmd(const char *line, struct tap_cmd **d_cmd);
@@ -16,7 +22,7 @@ void tap_print_line(const char *line);
 void tap_printf_line(const char *fmt, ...);
 
 void tap_print_testpoint(bool success, struct test *test,
-                         const char *directive);
+                         struct tap_duration *duration, const char *directive);
 
 void tap_print_internal_error(int err, struct test *test, const char *reason);
 
