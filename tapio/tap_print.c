@@ -2,8 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tapio.h>
 #include <tapstruct.h>
 #include <taptest.h>
+#include <taputil.h>
+
+#include "config.h"
 
 void tap_print_line(const char *line) {
     char *newline;
@@ -35,17 +39,21 @@ void tap_printf_line(const char *fmt, ...) {
 }
 
 void tap_print_testpoint(bool success, struct test *test,
-                         const char *directive) {
+                         struct tap_duration *duration, const char *directive) {
     tap_string_t *tstr;
+    double secs;
     char *str;
 
     tstr = tap_string_ctor(NULL);
     tap_string_concat_printf(tstr, "%s %zu", success ? "ok" : "not ok",
                              test->id);
+    tap_string_concat(tstr, " - ");
     if (test->description) {
-        tap_string_concat(tstr, " - ");
-        tap_string_concat(tstr, test->description);
+        tap_string_concat_printf(tstr, "%s ", test->description);
     }
+    secs = tap_duration_to_secs(duration);
+    tap_string_concat_printf(tstr, "(%.3gs)", secs);
+
     if (directive) {
         tap_string_concat(tstr, " # ");
         tap_string_concat(tstr, directive);

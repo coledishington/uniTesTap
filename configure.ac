@@ -16,6 +16,8 @@ AC_PROG_SED
 
 AC_CHECK_PROG([VALGRIND], [valgrind], [valgrind], [])
 
+AC_DEFINE([_POSIX_C_SOURCE], [200809L], [Support newer posix definitions with glibc])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 LT_INIT
 
