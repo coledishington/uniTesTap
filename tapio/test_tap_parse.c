@@ -89,7 +89,7 @@ void positive_tests(void) {
             .name = "Skip mixed case cmd with comment split with newline",
             .input_line = ":SkIp lEt's sKip dowN\n to the next tesT",
             .output_type = tap_cmd_type_skip,
-            .output_str = "SKIP lEt's sKip dowN",
+            .output_str = "SKIP lEt's sKip dowN  to the next tesT",
         },
     };
 

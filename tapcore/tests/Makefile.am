@@ -17,7 +17,8 @@ check_PROGRAMS = \
     $(TESTPLAN_TESTS) \
     test_early_exit \
     test_cmd \
-    test_metadata
+    test_metadata \
+    test_mixed
 
 LDADD = ../libtap.la
 

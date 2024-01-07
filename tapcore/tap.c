@@ -70,11 +70,10 @@ int tap_init(struct TAP **d_tap) {
 
 int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
     char *description = NULL;
+    int err;
 
     tap = get_handle(tap);
     if (!tap) {
-        int err;
-
         err = tap_init(&handle);
         if (err != 0) {
             return err;
@@ -85,10 +84,11 @@ int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
     assert(tap->n_tests + 1 < MAX_TESTS);
 
     if (in_description) {
-        description = strdup(in_description);
-        if (!description) {
-            return errno;
+        err = tap_trim_string(in_description, &description);
+        if (err != 0) {
+            return err;
         }
+        tap_replace_string(description, '\n', ' ');
     }
 
     tap->tests[tap->n_tests] = (struct test){
