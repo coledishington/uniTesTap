@@ -67,6 +67,7 @@ run_tests() {
         TEST_DIFF_OUTPUT="$TEST_PATH.diff"
         if ! diff "$GOLDEN_PATH" "$TEST_XFRM_OUTPUT" >"$TEST_DIFF_OUTPUT" 2>&1; then
             printf 'not ok %d - %s output changed\n' "$TEST_ID" "$TEST_NAME"
+            continue
         fi
 
         printf 'ok %d - %s\n' "$TEST_ID" "$TEST_NAME"
