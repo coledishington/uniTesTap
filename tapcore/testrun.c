@@ -38,6 +38,7 @@ static int tap_process_testrun_output(struct test_run *testrun) {
 
         err = tap_parse_cmd(line, &line_cmd);
         if (err != 0) {
+            tap_print_internal_error(err, &testrun->test, "failed to parse tap cmd from line");
             break;
         }
         if (!line_cmd) {
