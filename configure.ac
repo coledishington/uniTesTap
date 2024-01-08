@@ -14,7 +14,14 @@ AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_SED
 
-AC_CHECK_PROG([VALGRIND], [valgrind], [valgrind], [])
+OPT_WITH_VALGRIND=yes
+AC_ARG_WITH(
+    [valgrind],
+    [AS_HELP_STRING([--with-valgrind], [Test with valgrind toolset (default is yes)])],
+    [OPT_WITH_VALGRIND=$withval])
+AS_IF([test "$OPT_WITH_VALGRIND" = 'yes'], [
+    AC_CHECK_PROG([VALGRIND], [valgrind], [valgrind], [])
+])
 
 AC_DEFINE([_POSIX_C_SOURCE], [200809L], [Support newer posix definitions with glibc])
 
