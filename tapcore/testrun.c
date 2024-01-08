@@ -23,6 +23,12 @@ static int tap_process_testrun_output(struct test_run *testrun) {
     int err = 0;
 
     test_fp = fdopen(testrun->outfd, "r");
+    if (!test_fp) {
+        err = errno;
+        tap_print_internal_error(err, &testrun->test, "failed open pipe as stream");
+        return err;
+    }
+
     for (; (bytes = getline(&line, &line_len, test_fp)) != -1;) {
         tap_cmd_t *line_cmd = NULL;
 
