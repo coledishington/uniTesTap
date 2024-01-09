@@ -12,11 +12,13 @@ struct test_run {
     int outfd;
     int exitstatus;
     struct tap_duration duration;
+    bool exited;
 };
 
 int tap_start_testrun(struct test *test, struct test_run *testrun);
 
-int tap_wait_for_testrun(struct test_run *testrun);
+int tap_wait_for_testrun(struct test_run *testruns, size_t n_runs,
+                         struct pollfd *test_poll);
 
 void tap_cleanup_testrun(struct test_run *testrun);
 

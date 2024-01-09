@@ -15,6 +15,7 @@
 #include "config.h"
 #include "internal.h"
 
+#define N_TEST_PROCESSES 2
 #define MAX_TESTS 200
 
 struct TAP {
@@ -44,9 +45,9 @@ static void tap_report_testrun(struct test_run *run) {
         if (!sig_name) {
             sig_name = "UNKNOWN";
         }
-        printf("# test terminated via %s(%d)\n", sig_name, sig);
+        printf("# terminated via %s(%d)\n", sig_name, sig);
     } else {
-        printf("# test %zu exited for unknown reason\n", test->id);
+        printf("# exited for unknown reason\n");
     }
 
     if (tap_cmd_is_directive(run->cmd)) {
@@ -102,32 +103,81 @@ int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
 }
 
 int tap_runall(struct TAP *tap) {
-    int err;
+    struct test_run running[N_TEST_PROCESSES] = {
+        {.outfd = -1, .pid = -1},
+        {.outfd = -1, .pid = -1},
+    };
+    struct pollfd fds[N_TEST_PROCESSES];
+    size_t n_running_slots, next_testid;
+    unsigned int n_running, n_finished;
+    bool bailed = false;
+    int err = 0;
 
     tap = get_handle(tap);
+
+    /* Handle running less tests than available running slots */
+    n_running_slots = N_TEST_PROCESSES;
+    if (tap->n_tests < N_TEST_PROCESSES) {
+        n_running_slots = tap->n_tests;
+    }
+
+    /* Trigger and wait on tests */
     printf("1..%zu\n", tap->n_tests);
-    for (size_t idx = 0; idx < tap->n_tests; idx++) {
-        struct test *test = &tap->tests[idx];
-        struct test_run testrun = {0};
+    for (next_testid = 0, n_running = 0, n_finished = 0;
+         (n_finished < tap->n_tests && !bailed) || n_running > 0;) {
+        /* Start tests in any free slots */
+        for (size_t ridx = 0;
+             ridx < n_running_slots && next_testid < tap->n_tests && !bailed;
+             ridx++) {
+            struct test_run *run;
+            struct test *test;
 
-        err = tap_start_testrun(test, &testrun);
+            run = &running[ridx];
+            if (run->test.id != 0) {
+                /* Slot is currently taken */
+                continue;
+            }
+
+            test = &tap->tests[next_testid];
+            err = tap_start_testrun(test, run);
+            if (err != 0) {
+                bailed = true;
+                break;
+            }
+            next_testid++;
+            n_running++;
+        }
+
+        err = tap_wait_for_testrun(running, N_TEST_PROCESSES, fds);
         if (err != 0) {
+            bailed = true;
             break;
         }
 
-        err = tap_wait_for_testrun(&testrun);
-        if (err != 0) {
-            break;
+        /* Check for any bailed tests if nothing has bailed */
+        for (size_t ridx = 0; !bailed && ridx < n_running_slots; ridx++) {
+            struct test_run *run;
+
+            run = &running[ridx];
+            if (tap_cmd_is_bailed(run->cmd)) {
+                tap_print_line(run->cmd->str);
+                bailed = true;
+            }
         }
 
-        if (tap_cmd_is_bailed(testrun.cmd)) {
-            tap_print_line(testrun.cmd->str);
-            tap_cleanup_testrun(&testrun);
-            break;
-        }
+        /* Report on any finished tests */
+        for (size_t ridx = 0; ridx < n_running_slots; ridx++) {
+            struct test_run *run;
 
-        tap_report_testrun(&testrun);
-        tap_cleanup_testrun(&testrun);
+            run = &running[ridx];
+            if (!run->exited || run->test.id == 0) {
+                continue;
+            }
+            tap_report_testrun(run);
+            tap_cleanup_testrun(run);
+            n_finished++;
+            n_running--;
+        }
     }
 
     if (err != 0) {
