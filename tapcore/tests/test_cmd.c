@@ -66,6 +66,7 @@ static int fail_bail(void) {
 }
 
 int main(void) {
+    tap_set_option(TAP_OPTION_N_RUNNERS, 1);
     tap_register(NULL, pass_skipped, NULL);
     tap_register(NULL, fail_skipped, NULL);
     tap_register(NULL, pass_todo, NULL);

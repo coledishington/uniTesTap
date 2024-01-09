@@ -1,37 +1,37 @@
 1..6
+# test 5: :UNSUPPORED cmds do not work
+# test 5: :FAKE cmds do not work
+# test 5: : empty commands do not work
+# test 5: SKIP is just a word
+# test 5: TODO is just a word
+# test 5: Bail out! is just a word
+# test 5: word is just a word
+# test 5: :UNSUPPORED cmds do not work
+# test 5: :FAKE cmds do not work
+# test 5: : empty commands do not work
+# test 5: SKIP is just a word
+# test 5: TODO is just a word
+# test 5: Bail out! is just a word
+# test 5: word is just a word
+# test 6: :UNSUPPORED cmds do not work
+# test 6: :FAKE cmds do not work
+# test 6: : empty commands do not work
+# test 6: SKIP is just a word
+# test 6: TODO is just a word
+# test 6: Bail out! is just a word
+# test 6: word is just a word
+# test 6: :UNSUPPORED cmds do not work
+# test 6: :FAKE cmds do not work
+# test 6: : empty commands do not work
+# test 6: SKIP is just a word
+# test 6: TODO is just a word
+# test 6: Bail out! is just a word
+# test 6: word is just a word
 ok 1 - (***REPLACED TIME***) # SKIP don't need this test
 not ok 2 - (***REPLACED TIME***) # SKIP don't need this test
 ok 3 - (***REPLACED TIME***) # TODO will this ever be done?
 not ok 4 - (***REPLACED TIME***) # TODO will this ever be done?
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
 ok 5 - (***REPLACED TIME***) # SKIP don't need this test
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
 ok 6 - (***REPLACED TIME***) # TODO will this ever be done?
 
 1..3
@@ -43,19 +43,19 @@ ok 1 - (***REPLACED TIME***)
 Bail out! Jump ship
 
 1..3
+# test 2: :UNSUPPORED cmds do not work
+# test 2: :FAKE cmds do not work
+# test 2: : empty commands do not work
+# test 2: SKIP is just a word
+# test 2: TODO is just a word
+# test 2: Bail out! is just a word
+# test 2: word is just a word
+# test 2: :UNSUPPORED cmds do not work
+# test 2: :FAKE cmds do not work
+# test 2: : empty commands do not work
+# test 2: SKIP is just a word
+# test 2: TODO is just a word
+# test 2: Bail out! is just a word
+# test 2: word is just a word
 ok 1 - (***REPLACED TIME***)
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
-# :UNSUPPORED cmds do not work
-# :FAKE cmds do not work
-# : empty commands do not work
-# SKIP is just a word
-# TODO is just a word
-# Bail out! is just a word
-# word is just a word
 Bail out! Jump ship
