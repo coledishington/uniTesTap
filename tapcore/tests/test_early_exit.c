@@ -37,6 +37,7 @@ static int dereference_null_ptr(void) {
 }
 
 int main(void) {
+    tap_set_option(TAP_OPTION_N_RUNNERS, 1);
     tap_register(NULL, early_exit_success, NULL);
     tap_register(NULL, early_exit_fail, NULL);
     tap_register(NULL, assert_zero, NULL);

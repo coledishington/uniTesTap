@@ -11,22 +11,40 @@
 #include <tapstruct.h>
 #include <taptest.h>
 #include <taputil.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "internal.h"
 
-#define N_TEST_PROCESSES 2
+#define MAX_TEST_PROCESSES 32
 #define MAX_TESTS 200
 
 struct TAP {
-    size_t n_tests;
     struct test tests[MAX_TESTS];
+    size_t n_tests;
+    unsigned int n_runners;
 };
 
 /* Static variable used if no state is passed by caller */
 static struct TAP *handle = NULL;
 
 static inline TAP *get_handle(struct TAP *tap) { return tap ? tap : handle; }
+
+static inline int get_or_create_handle(struct TAP **d_tap) {
+    int err;
+
+    *d_tap = get_handle(*d_tap);
+    if (*d_tap) {
+        return 0;
+    }
+
+    err = tap_init(&handle);
+    if (err != 0) {
+        return err;
+    }
+    *d_tap = handle;
+    return 0;
+}
 
 static void tap_report_testrun(struct test_run *run) {
     struct test *test = &run->test;
@@ -66,7 +84,27 @@ int tap_init(struct TAP **d_tap) {
     if (!tap) {
         return errno;
     }
+
     *d_tap = tap;
+    return 0;
+}
+
+int tap_set_option(TAP *tap, TAP_OPTION option, ...) {
+    va_list ap;
+    int err;
+
+    if (option != TAP_OPTION_N_RUNNERS) {
+        return EINVAL;
+    }
+
+    err = get_or_create_handle(&tap);
+    if (err != 0) {
+        return err;
+    }
+
+    va_start(ap, option);
+    tap->n_runners = va_arg(ap, int);
+    va_end(ap);
     return 0;
 }
 
@@ -74,13 +112,9 @@ int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
     char *description = NULL;
     int err;
 
-    tap = get_handle(tap);
-    if (!tap) {
-        err = tap_init(&handle);
-        if (err != 0) {
-            return err;
-        }
-        tap = handle;
+    err = get_or_create_handle(&tap);
+    if (err != 0) {
+        return err;
     }
 
     assert(tap->n_tests + 1 < MAX_TESTS);
@@ -104,11 +138,8 @@ int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
 
 int tap_runall(struct TAP *tap) {
     struct test_run runs[MAX_TESTS] = {0};
-    struct test_run running[N_TEST_PROCESSES] = {
-        {.outfd = -1, .pid = -1},
-        {.outfd = -1, .pid = -1},
-    };
-    struct pollfd fds[N_TEST_PROCESSES];
+    struct test_run running[MAX_TEST_PROCESSES] = {0};
+    struct pollfd fds[MAX_TEST_PROCESSES];
     size_t n_running_slots, next_testid;
     unsigned int n_running, n_finished;
     bool bailed = false;
@@ -116,10 +147,21 @@ int tap_runall(struct TAP *tap) {
 
     tap = get_handle(tap);
 
+    for (size_t idx = 0; idx < MAX_TEST_PROCESSES; idx++) {
+        running[idx] = (struct test_run){.outfd = -1, .pid = -1};
+    }
+
     /* Handle running less tests than avaliable running slots */
-    n_running_slots = N_TEST_PROCESSES;
-    if (tap->n_tests < N_TEST_PROCESSES) {
+    n_running_slots = tap->n_runners;
+    if (n_running_slots <= 0) {
+        /* Default to using all cores. One will monitor the tests */
+        n_running_slots = sysconf(_SC_NPROCESSORS_ONLN) - 1;
+    }
+    if (tap->n_tests < n_running_slots) {
         n_running_slots = tap->n_tests;
+    }
+    if (n_running_slots > MAX_TEST_PROCESSES) {
+        n_running_slots = MAX_TEST_PROCESSES;
     }
 
     /* Trigger and wait on tests */
@@ -149,7 +191,7 @@ int tap_runall(struct TAP *tap) {
             }
         }
 
-        err = tap_wait_for_testrun(running, N_TEST_PROCESSES, fds);
+        err = tap_wait_for_testrun(running, n_running_slots, fds);
         if (err != 0) {
             bailed = true;
             break;

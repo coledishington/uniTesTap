@@ -1,10 +1,10 @@
 1..5
+# test 3: test_early_exit: **/test_early_exit.c:LINENUM: assert_zero: Assertion `0' failed.
 ok 1 - (***REPLACED TIME***)
 not ok 2 - (***REPLACED TIME***)
-# test_early_exit: **/test_early_exit.c:LINENUM: assert_zero: Assertion `0' failed.
-# test terminated via Aborted(6)
+# test 3: terminated via Aborted(6)
 not ok 3 - (***REPLACED TIME***)
-# test terminated via Segmentation fault(11)
+# test 4: terminated via Segmentation fault(11)
 not ok 4 - (***REPLACED TIME***)
-# test terminated via Segmentation fault(11)
+# test 5: terminated via Segmentation fault(11)
 not ok 5 - (***REPLACED TIME***)
