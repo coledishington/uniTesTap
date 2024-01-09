@@ -52,8 +52,7 @@ static int tap_process_testrun_output(struct test_run *testrun) {
         if (cmd) {
             /* Only allow one directive command per test, warn the extra is
              * ignored */
-            tap_printf_line("# One directive command per test: ignoring '%s'",
-                            line_cmd->str);
+            tap_printf_line("# One directive command per test: ignoring '%s'", line_cmd->str);
             free(line_cmd);
             continue;
         }
