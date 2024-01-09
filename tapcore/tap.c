@@ -103,6 +103,7 @@ int tap_register(struct TAP *tap, test_t funct, const char *in_description) {
 }
 
 int tap_runall(struct TAP *tap) {
+    struct test_run runs[MAX_TESTS] = {0};
     struct test_run running[N_TEST_PROCESSES] = {
         {.outfd = -1, .pid = -1},
         {.outfd = -1, .pid = -1},
@@ -160,7 +161,6 @@ int tap_runall(struct TAP *tap) {
 
             run = &running[ridx];
             if (tap_cmd_is_bailed(run->cmd)) {
-                tap_print_line(run->cmd->str);
                 bailed = true;
             }
         }
@@ -173,11 +173,33 @@ int tap_runall(struct TAP *tap) {
             if (!run->exited || run->test.id == 0) {
                 continue;
             }
-            tap_report_testrun(run);
-            tap_cleanup_testrun(run);
+            runs[run->test.id - 1] = *run;
+            running[ridx] = (struct test_run){.outfd = -1, .pid = -1};
             n_finished++;
             n_running--;
         }
+    }
+
+    /* Report testruns up to first bail */
+    for (size_t idx = 0; idx < ARRAY_LEN(runs); idx++) {
+        struct test_run *run;
+
+        run = &runs[idx];
+        /* Test runs past a bail should not be trusted */
+        if (!run->exited) {
+            break;
+        } else if (tap_cmd_is_bailed(run->cmd)) {
+            tap_print_line(run->cmd->str);
+            break;
+        }
+        tap_report_testrun(run);
+    }
+    /* Cleanup after all testruns */
+    for (size_t idx = 0; idx < ARRAY_LEN(runs); idx++) {
+        struct test_run *run;
+
+        run = &runs[idx];
+        tap_cleanup_testrun(run);
     }
 
     if (err != 0) {
