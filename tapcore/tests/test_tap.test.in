@@ -17,6 +17,7 @@ test_output_xfrm() (
         -e 's|[(][0-9.]\+[a-zA-Z]\?s[)]|(***REPLACED TIME***)|g' \
         "$1"
 )
+
 run_test() {
     TEST_PATH=$1
     TEST_NAME=$(basename "$TEST_PATH" 2>/dev/null)
