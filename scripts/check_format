@@ -12,6 +12,7 @@ VERBOSE=
 HELP=
 
 # Globals
+COMMIT=
 FILES=
 
 help() {
@@ -101,6 +102,12 @@ match_shell_script() {
     return 1
 }
 
+match_git_head() {
+    IN_HASH=$(git rev-parse "$1")
+    HEAD_HASH=$(git rev-parse 'HEAD')
+    [ "$IN_HASH" = "$HEAD_HASH" ]
+}
+
 check_c_souce() {
     # Style checker
     codespell -i 3 -w -- "$1"
@@ -147,6 +154,23 @@ check_files() {
     done
 }
 
+check_commit_msg() {
+    HASH="$1"
+
+    if match_git_head "$HASH"; then
+        # Interactively edit commit message if HEAD
+        GIT_EDITOR='codespell -i 3 -w' git commit --amend
+    else
+        SHOW=$(mktemp check_format.gitshow.XXX)
+
+        # Check if commit message has any issues and reports
+        # any to stdout/stderr
+        git show -s --format='%B' "$HASH" >"$SHOW"
+        codespell "$SHOW"
+        rm "$SHOW"
+    fi
+}
+
 if ! parse_args "$@"; then
     exit 1
 fi
@@ -175,9 +199,11 @@ if [ "$#" -lt 1 ]; then
     fi
     if [ -z "$FILES" ]; then
         set_git_show_files
+        COMMIT=$(git rev-parse 'HEAD')
     fi
 elif ! [ -e "$1" ]; then
     set_git_show_files "$1"
+    COMMIT=$(git rev-parse "$1")
 fi
 
 if [ -n "$FILES" ]; then
@@ -187,6 +213,10 @@ if [ -n "$FILES" ]; then
     # shellcheck disable=2086
     set -- $FILES
     IFS=$OLD_IFS
+fi
+
+if [ -n "$COMMIT" ]; then
+    check_commit_msg "$COMMIT"
 fi
 
 # Allow for paths containing a space
