@@ -103,11 +103,13 @@ match_shell_script() {
 
 check_c_souce() {
     # Style checker
+    codespell -i 3 -w -- "$1"
     clang-format -i -- "$1"
 }
 
 check_shell_script() {
     # Style checker
+    codespell -i 3 -w -- "$1"
     shfmt --posix --indent 4 --case-indent --simplify --write -- "$1"
 
     # Static analysis

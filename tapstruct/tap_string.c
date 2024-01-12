@@ -17,7 +17,7 @@
 #include "config.h"
 
 struct tap_string {
-    size_t alloced;
+    size_t allocated;
     size_t len;
     char *data;
 };
@@ -61,7 +61,7 @@ static int tap_string_grow(tap_string_t *tstr, size_t new_len) {
         return errno;
     }
     tstr->data = new_data;
-    tstr->alloced = alloc_len;
+    tstr->allocated = alloc_len;
     return 0;
 }
 
@@ -69,7 +69,7 @@ static int tap_string_grow_to_fit(tap_string_t *tstr, size_t append_len) {
     size_t new_len;
 
     new_len = tstr->len + append_len;
-    if (new_len + 1 <= tstr->alloced) {
+    if (new_len + 1 <= tstr->allocated) {
         return 0;
     }
     return tap_string_grow(tstr, new_len + 1);
@@ -140,7 +140,7 @@ int tap_string_concat_vprintf(tap_string_t *tstr, const char *fmt, va_list ap) {
     }
 
     n_written =
-        vsnprintf(tstr->data + tstr->len, tstr->alloced - tstr->len, fmt, ap);
+        vsnprintf(tstr->data + tstr->len, tstr->allocated - tstr->len, fmt, ap);
     return n_written < 0 ? -1 : 0;
 }
 
