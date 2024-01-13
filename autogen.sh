@@ -14,6 +14,7 @@ CACHE=.autogen_cache
 
 # autogen arguments
 BUILD_DIR=
+INSTALL=
 VERBOSE=
 CHECK=
 CLEAN=
@@ -24,6 +25,7 @@ HELP=
 CACHED_BUILD_DIR=
 
 # Global state
+PREFIX=/usr/local
 STDOUT=1
 
 abs_path() (
@@ -55,11 +57,13 @@ options:
   -v, --verbose              print steps of execution
   --check                    run unit tests
   --clean                    re-build everything
+  --install [PREFIX]         Install library in PREFIX (default: /usr/local)
 eof
 }
 
 argparse() {
     N_POSITIONAL_ARGS=0
+    OPTION_ARG=
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -78,12 +82,27 @@ argparse() {
             --clean)
                 CLEAN=$YES
                 ;;
+            --install)
+                OPTION_ARG=--install
+                INSTALL=$YES
+                ;;
             -*)
                 printf 'Unknown option %s\n' "$1" >&2
                 return 1
                 ;;
             *)
-                if [ $N_POSITIONAL_ARGS -eq 0 ]; then
+                if [ -n "$OPTION_ARG" ]; then
+                    case "$OPTION_ARG" in
+                        --install)
+                            PREFIX="$1"
+                            ;;
+                        *)
+                            printf 'Unknown option arg %s\n' "$OPTION_ARG" >&2
+                            return 1
+                            ;;
+                    esac
+                    OPTION_ARG=
+                elif [ $N_POSITIONAL_ARGS -eq 0 ]; then
                     BUILD_DIR="$1"
                 else
                     printf 'Unknown positional argument: %s' "$1" >&2
@@ -172,7 +191,7 @@ build() (
         make distclean || true # Makefile may not exist
     fi
 
-    "$ABS_PROJECT_ROOT"/configure
+    "$ABS_PROJECT_ROOT"/configure --prefix="$PREFIX"
     make_
 )
 
@@ -181,7 +200,13 @@ check() (
     make check
 )
 
+install() (
+    cd "$BUILD_DIR"
+    make install
+)
+
 if ! argparse "$@"; then
+    IFS="$OLD_IFS"
     exit 1
 fi
 
@@ -239,4 +264,8 @@ fi
 
 if [ "$CHECK" = "$YES" ]; then
     check
+fi
+
+if [ "$INSTALL" = "$YES" ]; then
+    install
 fi
