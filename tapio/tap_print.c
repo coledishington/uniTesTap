@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 
 #include "config.h"
 
-void tap_print_line(const char *line) {
+int tap_print_line(const char *line) {
     char *newline;
     int width;
 
@@ -20,66 +21,101 @@ void tap_print_line(const char *line) {
     } else {
         width = strlen(line);
     }
-    printf("%.*s\n", width, line);
+    if (printf("%.*s\n", width, line) < 0) {
+        return EIO;
+    };
+    return 0;
 }
 
-void tap_printf_line(const char *fmt, ...) {
+int tap_printf_line(const char *fmt, ...) {
     tap_string_t *tstr;
     va_list ap;
-    char *str;
+    int err;
 
-    tstr = tap_string_ctor(NULL);
+    err = tap_string_ctor(&tstr, NULL);
+    if (err != 0) {
+        return err;
+    }
     va_start(ap, fmt);
-    tap_string_concat_vprintf(tstr, fmt, ap);
+    err = tap_string_concat_vprintf(tstr, fmt, ap);
     va_end(ap);
-    str = tap_string_dtor(tstr, false);
-
-    tap_print_line(str);
-    free(str);
+    if (err != 0) {
+        return err;
+    }
+    err = tap_print_line(tap_string_borrow(tstr));
+    tap_string_dtor(tstr);
+    return err;
 }
 
-void tap_print_testpoint(bool success, struct test *test,
-                         struct tap_duration *duration, const char *directive) {
+int tap_print_testpoint(bool success, struct test *test,
+                        struct tap_duration *duration, const char *directive) {
     struct tap_seconds secs;
     tap_string_t *tstr;
-    char *str;
+    const char *ok;
+    int err;
 
-    tstr = tap_string_ctor(NULL);
-    tap_string_concat_printf(tstr, "%s %zu", success ? "ok" : "not ok",
-                             test->id);
-    tap_string_concat(tstr, " - ");
+    ok = success ? "ok" : "not ok";
+    err = tap_string_ctor(&tstr, "%s %zu - ", ok, test->id);
+    if (err != 0) {
+        goto done;
+    }
+
     if (test->description) {
-        tap_string_concat_printf(tstr, "%s ", test->description);
+        err = tap_string_concat_printf(tstr, "%s ", test->description);
+        if (err != 0) {
+            goto done;
+        }
     }
 
     secs = tap_duration_to_secs(duration);
     if (secs.mprefix != 0) {
-        tap_string_concat_printf(tstr, "(%.3g%cs)", secs.secs, secs.mprefix);
+        err = tap_string_concat_printf(tstr, "(%.3g%cs)", secs.secs,
+                                       secs.mprefix);
     } else {
-        tap_string_concat_printf(tstr, "(%.3gs)", secs.secs);
+        err = tap_string_concat_printf(tstr, "(%.3gs)", secs.secs);
+    }
+    if (err != 0) {
+        goto done;
     }
 
     if (directive) {
-        tap_string_concat(tstr, " # ");
-        tap_string_concat(tstr, directive);
+        err = tap_string_concat_printf(tstr, " # %s", directive);
+        if (err != 0) {
+            goto done;
+        }
     }
-    str = tap_string_dtor(tstr, false);
-    tap_print_line(str);
-    free(str);
+
+    err = tap_print_line(tap_string_borrow(tstr));
+done:
+    tap_string_dtor(tstr);
+    return err;
 }
 
-void tap_print_internal_error(int err, struct test *test, const char *reason) {
+int tap_print_internal_error(int internal_err, struct test *test,
+                             const char *reason) {
     tap_string_t *tstr;
-    char *str;
+    int err;
 
-    tstr = tap_string_ctor("# ");
-    if (test) {
-        tap_string_concat_printf(tstr, " test %zu: ", test->id);
+    err = tap_string_ctor(&tstr, "# ");
+    if (err != 0) {
+        goto done;
     }
-    tap_string_concat_printf(tstr, "internal test runner error : %s(%d) %s",
-                             strerror(err), err, reason);
-    str = tap_string_dtor(tstr, false);
 
-    tap_print_line(str);
-    free(str);
+    if (test) {
+        err = tap_string_concat_printf(tstr, " test %zu: ", test->id);
+        if (err != 0) {
+            goto done;
+        }
+    }
+    err =
+        tap_string_concat_printf(tstr, "internal test runner error : %s(%d) %s",
+                                 strerror(internal_err), internal_err, reason);
+    if (err != 0) {
+        goto done;
+    }
+
+    err = tap_print_line(tap_string_borrow(tstr));
+done:
+    tap_string_dtor(tstr);
+    return err;
 }

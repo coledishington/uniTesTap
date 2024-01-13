@@ -46,11 +46,12 @@ static inline int get_or_create_handle(struct TAP **d_tap) {
     return 0;
 }
 
-static void tap_report_testrun(struct test_run *run) {
+static int tap_report_testrun(struct test_run *run) {
     struct test *test = &run->test;
     int wres = run->exitstatus;
     const char *directive = NULL;
     bool passed = false;
+    int err;
 
     if (WIFEXITED(wres)) {
         passed = WEXITSTATUS(wres) == 0;
@@ -71,7 +72,8 @@ static void tap_report_testrun(struct test_run *run) {
     if (tap_cmd_is_directive(run->cmd)) {
         directive = run->cmd->str;
     }
-    tap_print_testpoint(passed, test, &run->duration, directive);
+    err = tap_print_testpoint(passed, test, &run->duration, directive);
+    return err;
 }
 
 int tap_init(struct TAP **d_tap) {
@@ -231,7 +233,7 @@ int tap_runall(struct TAP *tap) {
         if (!run->exited) {
             break;
         } else if (tap_cmd_is_bailed(run->cmd)) {
-            tap_print_line(run->cmd->str);
+            err = tap_print_line(run->cmd->str);
             break;
         }
         tap_report_testrun(run);

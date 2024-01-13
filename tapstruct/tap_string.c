@@ -84,24 +84,30 @@ static void tap_string_concat_danger(tap_string_t *tstr, const char *str,
     tstr->len += str_len;
 }
 
-tap_string_t *tap_string_ctor(const char *str) {
+int tap_string_ctor(tap_string_t **d_tstr, const char *fmt, ...) {
     tap_string_t *tstr;
-    size_t str_len;
+    va_list ap;
+    int err;
 
     tstr = calloc(1, sizeof(*tstr));
     if (!tstr) {
-        return NULL;
+        return errno;
     }
-    if (!str) {
-        return tstr;
+    if (!fmt) {
+        *d_tstr = tstr;
+        return 0;
     }
-    str_len = strlen(str);
-    if (tap_string_grow(tstr, str_len) != 0) {
-        return NULL;
+    va_start(ap, fmt);
+    err = tap_string_concat_vprintf(tstr, fmt, ap);
+    va_end(ap);
+    if (err != 0) {
+        return err;
     }
-    tap_string_concat_danger(tstr, str, str_len);
-    return tstr;
+    *d_tstr = tstr;
+    return 0;
 }
+
+const char *tap_string_borrow(tap_string_t *tstr) { return tstr->data; }
 
 int tap_string_concat(tap_string_t *tstr, const char *str) {
     size_t str_len = strlen(str);
@@ -126,22 +132,24 @@ int tap_string_concat_vprintf(tap_string_t *tstr, const char *fmt, va_list ap) {
     n_written = vsnprintf(buf, ARRAY_LEN(buf), fmt, ap_copy);
     va_end(ap_copy);
     if (n_written < 0) {
-        return n_written;
+        return EIO;
     }
+    /* n_written excludes the space needed for the null byte */
+    n_written++;
 
     err = tap_string_grow_to_fit(tstr, n_written);
     if (err != 0) {
         return err;
     }
 
-    if (n_written + 1 <= ARRAY_LEN(buf)) {
-        tap_string_concat_danger(tstr, buf, n_written);
+    if (n_written <= ARRAY_LEN(buf)) {
+        tap_string_concat_danger(tstr, buf, n_written - 1);
         return 0;
     }
 
     n_written =
         vsnprintf(tstr->data + tstr->len, tstr->allocated - tstr->len, fmt, ap);
-    return n_written < 0 ? -1 : 0;
+    return n_written < 0 ? EIO : 0;
 }
 
 int tap_string_concat_printf(tap_string_t *tstr, const char *fmt, ...) {
@@ -154,17 +162,10 @@ int tap_string_concat_printf(tap_string_t *tstr, const char *fmt, ...) {
     return err;
 }
 
-char *tap_string_dtor(tap_string_t *tstr, bool free_str) {
-    char *data;
-
+void tap_string_dtor(tap_string_t *tstr) {
     if (!tstr) {
-        return NULL;
+        return;
     }
-    data = tstr->data;
+    free(tstr->data);
     free(tstr);
-    if (!free_str) {
-        return data;
-    }
-    free(data);
-    return NULL;
 }

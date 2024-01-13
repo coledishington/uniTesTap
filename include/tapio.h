@@ -22,13 +22,13 @@ int tap_trim_string(const char *in, char **out);
 
 void tap_replace_string(char *in, char c, char d);
 
-void tap_print_line(const char *line);
+int tap_print_line(const char *line);
 
-void tap_printf_line(const char *fmt, ...);
+int tap_printf_line(const char *fmt, ...);
 
-void tap_print_testpoint(bool success, struct test *test,
-                         struct tap_duration *duration, const char *directive);
+int tap_print_testpoint(bool success, struct test *test,
+                        struct tap_duration *duration, const char *directive);
 
-void tap_print_internal_error(int err, struct test *test, const char *reason);
+int tap_print_internal_error(int err, struct test *test, const char *reason);
 
 #endif /* __TAP_IO_H__ */
