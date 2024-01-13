@@ -11,8 +11,8 @@ AM_CPPFLAGS = -I $(BUILDDIR_INCLUDE_PATH) \
 
 include_HEADERS = $(PUBLIC_INCLUDE_PATH)/tap.h
 
-lib_LTLIBRARIES = libtap.la
-libtap_la_SOURCES = tap.c testrun.c
-libtap_la_LIBADD = $(LIBTAPSTRUCT) $(LIBTAPIO)
+lib_LTLIBRARIES = libuniTesTap.la
+libuniTesTap_la_SOURCES = tap.c testrun.c
+libuniTesTap_la_LIBADD = $(LIBTAPSTRUCT) $(LIBTAPIO)
 
 SUBDIRS = tests

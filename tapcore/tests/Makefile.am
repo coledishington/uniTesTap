@@ -20,7 +20,7 @@ check_PROGRAMS = \
     test_metadata \
     test_mixed
 
-LDADD = ../libtap.la
+LDADD = ../libuniTesTap.la
 
 TEST_LOG_DRIVER = \
     env AM_TAP_AWK='@AWK@' @SHELL@ \

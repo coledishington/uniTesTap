@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libuniTesTap
+Description: C unit test TAP producer library
+Version: @VERSION@
+Libs: -L${libdir} -luniTesTap
+Cflags: -I${includedir}

@@ -2,3 +2,5 @@
 ACLOCAL_AMFLAGS = -I build/autotools/m4
 
 SUBDIRS = tapstruct tapio tapcore
+
+pkgconfig_DATA = uniTesTap.pc
