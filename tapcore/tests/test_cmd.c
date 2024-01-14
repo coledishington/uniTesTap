@@ -74,26 +74,30 @@ int main(void) {
     /* Noisy tests */
     tap_register(NULL, pass_skipped_plus_output, NULL);
     tap_register(NULL, pass_todo_plus_output, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_runall(NULL);
+    tap_cleanup(NULL);
 
     printf("\n");
 
     tap_register(NULL, pass, NULL);
     tap_register(NULL, pass_bail, NULL);
     tap_register(NULL, pass, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_runall(NULL);
+    tap_cleanup(NULL);
 
     printf("\n");
 
     tap_register(NULL, pass, NULL);
     tap_register(NULL, fail_bail, NULL);
     tap_register(NULL, pass, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_runall(NULL);
+    tap_cleanup(NULL);
 
     printf("\n");
 
     tap_register(NULL, pass, NULL);
     tap_register(NULL, pass_bail_plus_output, NULL);
     tap_register(NULL, pass, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_runall(NULL);
+    tap_cleanup(NULL);
 }

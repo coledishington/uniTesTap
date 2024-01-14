@@ -43,5 +43,6 @@ int main(void) {
     tap_register(NULL, assert_zero, NULL);
     tap_register(NULL, exhaust_stack_frame, NULL);
     tap_register(NULL, dereference_null_ptr, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_runall(NULL);
+    tap_cleanup(NULL);
 }

@@ -74,6 +74,21 @@ void tap_cleanup(TAP *tap);
 int tap_register(TAP *tap, test_t test, const char *description);
 
 /**
+ * @fn tap_easy_register
+ *
+ * Register a test to run in tap_runall(). This function is not re-entrant,
+ * see tap_register() for a re-entrant version.
+ *
+ * @param test the test function to register.
+ * @param description an optional description of the registered test.
+ *
+ * @return 0 on success, errno-like value otherwise.
+ */
+static inline int tap_easy_register(test_t test, const char *description) {
+    return tap_register(NULL, test, description);
+}
+
+/**
  * @fn tap_runall
  *
  * Run all tests registered in the global TAP tests list.
@@ -85,19 +100,19 @@ int tap_register(TAP *tap, test_t test, const char *description);
 int tap_runall(TAP *tap);
 
 /**
- * @fn tap_runall_and_cleanup
+ * @fn tap_easy_runall_and_cleanup
  *
- * Run all tests registered in the global TAP tests list and cleanup.
- *
- * @param tap a tap handle allocated by tap_init().
+ * Run all tests registered in the global TAP tests list and cleanup. This
+ * function is not re-entrant, see tap_runall() and tap_cleanup() for
+ * re-entrant usecases.
  *
  * @return 0 on success, errno-like value otherwise.
  */
-static inline int tap_runall_and_cleanup(TAP *tap) {
+static inline int tap_easy_runall_and_cleanup(void) {
     int ret;
 
-    ret = tap_runall(tap);
-    tap_cleanup(tap);
+    ret = tap_runall(NULL);
+    tap_cleanup(NULL);
     return ret;
 }
 

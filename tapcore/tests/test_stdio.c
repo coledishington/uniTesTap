@@ -18,8 +18,8 @@ static int pass_output_with_two_newlines(void) {
 }
 
 int main(void) {
-    tap_register(NULL, pass_output_with_no_newline, NULL);
-    tap_register(NULL, pass_output_with_one_newline, NULL);
-    tap_register(NULL, pass_output_with_two_newlines, NULL);
-    tap_runall_and_cleanup(NULL);
+    tap_easy_register(pass_output_with_no_newline, NULL);
+    tap_easy_register(pass_output_with_one_newline, NULL);
+    tap_easy_register(pass_output_with_two_newlines, NULL);
+    tap_easy_runall_and_cleanup();
 }
