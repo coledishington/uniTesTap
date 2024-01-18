@@ -13,7 +13,8 @@ VALGRIND="@VALGRIND@"
 test_output_xfrm() (
     # Transform any paths that may contain system specific component
     # (like the user running the test).
-    @SED@ -e 's|/.\+/tapcore/tests/\([^/.]\+[.]c\):[0-9]\+|**/\1:LINENUM|g' \
+    @SED@ -e 's|/.\+/tapcore/tests/\([^/.]\+[.]c\):[0-9]\+|\1:LINENUM|g' \
+        -e 's|\([^/.]\+[.]c\):[0-9]\+|\1:LINENUM|g' \
         -e 's|[(][0-9.]\+[a-zA-Z]\?s[)]|(***REPLACED TIME***)|g' \
         "$1"
 )

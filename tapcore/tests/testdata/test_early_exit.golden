@@ -1,5 +1,5 @@
 1..5
-# test 3: test_early_exit: **/test_early_exit.c:LINENUM: assert_zero: Assertion `0' failed.
+# test 3: test_early_exit: test_early_exit.c:LINENUM: assert_zero: Assertion `0' failed.
 ok 1 - (***REPLACED TIME***)
 not ok 2 - (***REPLACED TIME***)
 # test 3: terminated via Aborted(6)
