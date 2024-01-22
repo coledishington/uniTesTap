@@ -49,3 +49,7 @@ For further options check <code>./autogen --help</code>. If contributing to uniT
 # Contributors
 
 Before submitting any patches, please run <code>./scripts/checkpatch.sh</code> and <code>./autogen.sh --check</code> over each commit. Feel free to open a discussion to communicate any feature ideas if you're unsure how to implement or fit it into the surrounding code.
+
+# License
+
+uniTesTap is licensed under [LGPLv3](COPYING.LESSER).
