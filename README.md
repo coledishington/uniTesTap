@@ -12,13 +12,16 @@ uniTesTap's (unit-test-tap) purpose is a standalone Test Anything Protocol (TAP)
 uniTesTap test functions can be written without calling any custom functions, only using uniTesTap functions for the test rigging, for example using the standard library <code>assert()</code> function:
 
     #include <assert.h>
+    #include <tap.h>
 
     int test_plus() {
         assert(1 + 2 == 2);
+        return 0;
     }
 
     int test_subtract() {
-        assert(2 - 1 == 1)
+        assert(2 - 1 == 1);
+        return 0;
     }
 
     int main(void) {
@@ -30,9 +33,10 @@ uniTesTap test functions can be written without calling any custom functions, on
 Oops, notice the error in <code>test_plus()</code>, this check will fail and terminate the test, via <code>SIGABRT</code>. Regardless due to uniTesTap's test isolation <code>test_subtract()</code> will continue running just fine, producing the output:
 
     1..2
-    # test 1: test_early_exit: <file.c>:16: assert_zero: Assertion `0' failed.
-    not ok 1 - (25.6ms)
-    ok 2 - (30.6ms)
+    # test 1: example.test: <file.c>:5: test_plus: Assertion `1 + 2 == 2' failed.
+    # test 1: terminated via Aborted(6)
+    not ok 1 - Test adding works (95.6ms)
+    ok 2 - Test subtracting works (90.6ms)
 
 # Building uniTesTap
 
