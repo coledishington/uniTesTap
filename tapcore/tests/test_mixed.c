@@ -10,6 +10,7 @@ static int pass_skipped_newline(void) {
 }
 
 int main(void) {
-    tap_easy_register(pass_skipped_newline, "This is a description over\nmultiple lines\n");
+    tap_easy_register(pass_skipped_newline,
+                      "This is a description over\nmultiple lines\n");
     tap_easy_runall_and_cleanup();
 }
