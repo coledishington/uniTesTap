@@ -117,7 +117,7 @@ check_c_souce() {
 check_shell_script() {
     # Style checker
     codespell -i 3 -w -- "$1"
-    shfmt --posix --indent 4 --case-indent --simplify --write -- "$1"
+    shfmt -p -i 4 -ci -s -w -- "$1"
 
     # Static analysis
     shellcheck -- "$1"
