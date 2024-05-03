@@ -25,6 +25,7 @@ HELP=
 CACHED_BUILD_DIR=
 
 # Global state
+HAS_BUILD_INTERCEPT=
 PREFIX=/usr/local
 STDOUT=1
 
@@ -154,13 +155,17 @@ get_autotools_var() {
 }
 
 make_() {
-    CC=$(get_autotools_var "CC")
     # Try to generate compiler_commands.json for editors
-    intercept-build \
-        --cdb "$BUILD_DIR/compile_commands.json" \
-        --use-cc "$CC" \
-        --append \
+    if [ "$HAS_BUILD_INTERCEPT" = "$YES" ]; then
+        CC=$(get_autotools_var "CC")
+        intercept-build \
+            --cdb "$BUILD_DIR/compile_commands.json" \
+            --use-cc "$CC" \
+            --append \
+            make ${VERBOSE+-d}
+    else
         make ${VERBOSE+-d}
+    fi
 }
 
 build() (
@@ -258,6 +263,10 @@ if [ "$VERBOSE" = "$YES" ]; then
     set -x
 fi
 
+if which intercept-build >/dev/null 2>&1; then
+    HAS_BUILD_INTERCEPT=$YES
+fi
+
 if ! build; then
     exit 1
 fi
@@ -268,4 +277,8 @@ fi
 
 if [ "$INSTALL" = "$YES" ]; then
     install
+fi
+
+if [ "$HAS_BUILD_INTERCEPT" != "$YES" ]; then
+    printf 'Did not build compile_commands.json: intercept-build not found' >&2
 fi
