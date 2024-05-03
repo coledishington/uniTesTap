@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: dependencies
+      run: sudo apt-get install -y codespell clang-format shellcheck shfmt
+    - name: build
+      run: ./autogen.sh -v --clean
+    - name: lint
+      run: ./scripts/check_format -v --all --dry-run
+    - name: tests
+      run: ./autogen.sh -v --check
