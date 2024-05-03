@@ -8,8 +8,10 @@ NO='no'
 
 # Arguments
 POSITIONAL_ARGS=
+WRITE=$YES
 VERBOSE=
 HELP=
+ALL=
 
 # Globals
 COMMIT=
@@ -26,7 +28,9 @@ positional arguments:
 
 options:
   -h, --help                 show this help message and exit
+  -a, --all                  Test against all tracked files
   -v                         print steps of execution
+      --dry-run              Do not make any changes
 eof
 }
 
@@ -47,6 +51,12 @@ parse_args() {
                 ;;
             -v | --verbose)
                 VERBOSE=$YES
+                ;;
+            -a | --all)
+                ALL=$YES
+                ;;
+            --dry-run)
+                WRITE=
                 ;;
             --)
                 # Only positional arguments past here
@@ -86,6 +96,10 @@ set_git_show_files() {
     FILES=$(git show --pretty='' --name-only --diff-filter=ACMR "$arg")
 }
 
+set_git_tracked_files() {
+    FILES=$(git ls-tree --name-only -r "$arg")
+}
+
 match_shell_script() {
     # Check for hashbang
     case "$(head -n 1 "$1")" in
@@ -109,15 +123,25 @@ match_git_head() {
 }
 
 check_c_souce() {
+    dry_run=
+    if [ "$WRITE" != "$YES" ]; then
+        dry_run=$YES
+    fi
+
     # Style checker
-    codespell -i 3 -w -- "$1"
-    clang-format -i -- "$1"
+    codespell ${WRITE:+-i 3 -w} -- "$1"
+    clang-format --Werror ${dry_run:+--dry-run} ${WRITE:+-i} -- "$1"
 }
 
 check_shell_script() {
+    dry_run=
+    if [ "$WRITE" != "$YES" ]; then
+        dry_run=$YES
+    fi
+
     # Style checker
-    codespell -i 3 -w -- "$1"
-    shfmt -p -i 4 -ci -s -w -- "$1"
+    codespell ${WRITE:+-i 3 -w} -- "$1"
+    shfmt -l -p -i 4 -ci -s ${dry_run:+-d} ${WRITE:+-w} -- "$1"
 
     # Static analysis
     shellcheck -- "$1"
@@ -157,7 +181,7 @@ check_files() {
 check_commit_msg() {
     HASH="$1"
 
-    if match_git_head "$HASH"; then
+    if [ "$WRITE" = "$YES" ] && match_git_head "$HASH"; then
         # Interactively edit commit message if HEAD
         GIT_EDITOR='codespell -i 3 -w' git commit --amend
     else
@@ -191,7 +215,14 @@ IFS="
 set -- $POSITIONAL_ARGS
 IFS=$OLD_IFS
 
-if [ "$#" -lt 1 ]; then
+if [ "$ALL" = "$YES" ]; then
+    arg='HEAD'
+    if [ $# -gt 0 ]; then
+        arg=$1
+    fi
+    set_git_tracked_files "$arg"
+    COMMIT=$(git rev-parse "$arg")
+elif [ "$#" -lt 1 ]; then
     # Check the first one of index, working dir, or HEAD that contains changed files
     STAGED="$YES" set_git_diff_files
     if [ -z "$FILES" ]; then
