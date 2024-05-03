@@ -1,5 +1,6 @@
 #ifndef __TAP_H__
 #define __TAP_H__
+#include <stdlib.h>
 
 /**
  * @var TAP
